@@ -251,6 +251,8 @@
         @testset "partners" begin
             l1 = PairedLinkedList{Int}(1:n...)  
             l2 = PairedLinkedList{Int}(1:n...)
+            @test_throws ArgumentError addpartner!(newnode(l1, 1), newnode(l2, 1))
+            addpartner!(l1, l2)
 
             @testset "add" begin
                 for i=1:n
@@ -310,6 +312,7 @@
     @testset "random operations" begin
         l1 = PairedLinkedList{Int}()
         l2 = PairedLinkedList{Int}()
+        addpartner!(l1, l2)
         r1 = Int[]
         r2 = Int[]
         m = 100

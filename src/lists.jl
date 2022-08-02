@@ -115,6 +115,7 @@ mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
     tail::PairedListNode{T}
     function PairedLinkedList{T}() where T
         l = new{T}(0)
+        l.partner = l
         l.head = PairedListNode(l)
         l.tail = PairedListNode(l)
         l.head.next = l.tail
@@ -485,19 +486,38 @@ end
 
 """
     haspartner(node::PairedListNode) -> Bool
+    haspartner(list::PairedListNode) -> Bool
 
-Return `true` if `node` has a partner (that is, `node.partner !== node`), and false otherwise. 
+Return `true` if the provided node or list has a partner, and false otherwise. 
 """
 haspartner(node::PairedListNode) = (node.partner !== node)
+haspartner(list::PairedLinkedList) = (list.partner !== list)
 haspartner(::ListNode) = false
+haspartner(::DoublyLinkedList) = false
 
 """
-    addpartner!(node, partner)
+    addpartner!(node, partner_node)
+    addpartner!(list, partner_list)
 
-Add a link between a `node` and another node to be assigned its `partner`. If either node previously had
-a partner, the prior link is removed.
+Add a link between a the provided node or list and another object of the same type to be assigned its `partner`. 
+If either object previously had a partner, the prior link is removed.
 """
+function addpartner!(list::PairedLinkedList{T}, partner::PairedLinkedList{T}) where T
+    # ensure there are no orphaned partners
+    if haspartner(list)
+        removepartner!(list)
+    end
+    if haspartner(partner)
+        removepartner!(partner)
+    end
+
+    list.partner = partner
+    partner.partner = list
+    return list
+end
+
 function addpartner!(node::PairedListNode{T}, partner::PairedListNode{T}) where T
+    node.list.partner === partner.list || throw(ArgumentError("The provided nodes must belong to paired lists."))
     # ensure there are no orphaned partners
     if haspartner(node)
         removepartner!(node)
@@ -514,18 +534,18 @@ end
 """
     removepartner!(node)
 
-Remove the link between `node` and its partner (if `node` is paired) and return `node`.
+Remove the link between the node or list and its partner (if the object is already paired) and return `node`.
 """
-function removepartner!(node::PairedListNode)
-    if haspartner(node)
-        partner = node.partner
-        node.partner = node
+function removepartner!(obj::Union{PairedLinkedList, PairedListNode})
+    if haspartner(obj)
+        partner = obj.partner
+        obj.partner = obj
         partner.partner = partner
     end
-    return node
+    return obj
 end
 removepartner!(node::ListNode) = node;
-function removepartner!(l::AbstractLinkedList, idx::Int)
+function removepartner!(l::PairedLinkedList, idx::Int)
     node = getnode(l, idx)
     return removepartner!(node)
 end
