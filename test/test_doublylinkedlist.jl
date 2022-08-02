@@ -48,6 +48,8 @@
 
         @testset "push back / pop back" begin
             l = DoublyLinkedList{Int}()
+            dummy_list = DoublyLinkedList{Int}()
+            @test_throws ArgumentError insertnode!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
                 for i = 1:n

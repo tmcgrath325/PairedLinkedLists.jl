@@ -48,6 +48,8 @@
 
         @testset "push back / pop back" begin
             l = PairedLinkedList{Int}()
+            dummy_list = DoublyLinkedList{Int}()
+            @test_throws ArgumentError insertnode!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
                 for i = 1:n
@@ -122,9 +124,14 @@
         @testset "append / delete / copy / reverse" begin
             for i = 1:n
                 l = PairedLinkedList{Int}(1:n...)
+                dummy_list = PairedLinkedList{Int}()
 
                 @testset "append" begin
                     l2 = PairedLinkedList{Int}(n+1:2n...)
+                    addpartner!(l2, dummy_list)
+                    addpartner!(l2.head.next, dummy_list.head)
+                    @test_throws ArgumentError append!(l, l2)
+                    removepartner!(l2)
                     append!(l, l2)
                     @test l == PairedLinkedList{Int}(1:2n...)
                     @test collect(l) == collect(PairedLinkedList{Int}(1:2n...))

@@ -301,6 +301,12 @@ function Base.setindex!(l::AbstractLinkedList{T}, data, idx::Int) where T
 end
 
 function Base.append!(l1::L, l2::L) where L <: AbstractLinkedList
+    if haspartner(l2)
+        l1.partner === l2.partner || throw(ArgumentError("The lists must have the same partner to be combined."))
+    end
+    for node in IteratingListNodes(l2)
+        node.list = l1
+    end
     l1.tail.prev.next = l2.head.next 
     l2.tail.prev.next = l1.tail
     l1.len += length(l2)
@@ -337,7 +343,10 @@ Insert `node` into a list after the preceding node `prev`, update the list's len
 `node` and `prev` must belong to the same list.
 """
 function insertnode!(node::AbstractListNode{T}, prev::AbstractListNode{T}) where T
-    @assert(node.list === prev.list)
+    node.list === prev.list || throw(ArgumentError("The nodes must have the same parent list."))
+    if haspartner(node)
+        node.partner.list === prev.list.partner || throw(ArgumentError("The node cannot be added to a list that is partnered to a different list than the node."))
+    end
     next = prev.next
     node.prev = prev
     node.next = next
@@ -503,7 +512,7 @@ Add a link between a the provided node or list and another object of the same ty
 If either object previously had a partner, the prior link is removed.
 """
 function addpartner!(list::PairedLinkedList{T}, partner::PairedLinkedList{T}) where T
-    # ensure there are no orphaned partners
+    # ensure there are no orphaned partners and remove existing partners from the nodes
     if haspartner(list)
         removepartner!(list)
     end
@@ -536,13 +545,24 @@ end
 
 Remove the link between the node or list and its partner (if the object is already paired) and return `node`.
 """
-function removepartner!(obj::Union{PairedLinkedList, PairedListNode})
-    if haspartner(obj)
-        partner = obj.partner
-        obj.partner = obj
+function removepartner!(node::PairedListNode)
+    if haspartner(node)
+        partner = node.partner
+        node.partner = node
         partner.partner = partner
     end
-    return obj
+    return node
+end
+function removepartner!(list::PairedLinkedList)
+    if haspartner(list)
+        partner = list.partner
+        list.partner = list
+        partner.partner = partner
+        for list in IteratingListNodes(list)
+            removepartner!(list)
+        end
+    end
+    return list
 end
 removepartner!(node::ListNode) = node;
 function removepartner!(l::PairedLinkedList, idx::Int)
