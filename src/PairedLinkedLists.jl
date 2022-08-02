@@ -21,7 +21,7 @@ Array-like functionality is supported for `DoublyLinkedList` and `PairedLinkedLi
     DoublyLinkedList{Int64}(1, 2, 3, 4, 3, 6, 7, 8, 9)
 ```
 
-Supported methods include `push!`, `pushfirst!`, `pop!`, `popfirst!`, `popat!`, `delete!`, `insert!`, and `splice!`.
+Supported methods include `push!`, `pushfirst!`, `pop!`, `popfirst!`, `popat!`, `insert!`, and `splice!`.
 """
 module PairedLinkedLists
 
