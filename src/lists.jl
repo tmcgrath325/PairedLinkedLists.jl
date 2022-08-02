@@ -4,7 +4,7 @@ abstract type AbstractDoublyLinkedList{T} <: AbstractLinkedList{T} end
 abstract type AbstractPairedLinkedList{T} <: AbstractLinkedList{T} end
 
 """
-node = ListNode(list::DoublyLinkedList, data)
+    node = ListNode(list::DoublyLinkedList, data)
 
 Create a `ListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
 the provided `data`, a link `prev` to the preceding node, and a link `next` to the following node.
@@ -29,7 +29,7 @@ mutable struct ListNode{T} <: AbstractListNode{T}
 end
 
 """
-node = PairedListNode(list::PairedLinkedList, data)
+    node = PairedListNode(list::PairedLinkedList, data)
 
 Create a `PairedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
 the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and link `partner` to another
@@ -61,10 +61,10 @@ mutable struct PairedListNode{T} <: AbstractListNode{T}
 end
 
 """
-l = DoublyLinkedList{::Type}()
-l = DoublyLinkedList(elts...)
+    l = DoublyLinkedList{::Type}()
+    l = DoublyLinkedList(elts...)
 
-Create a `DoublyLinkedList` with elements of a specified type or containing a series of ordered elements. 
+Create a `DoublyLinkedList` with with nodes containing data of a specified type.
 
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
 `tail` at the end of the list . 
@@ -87,6 +87,7 @@ mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
 end
 
 DoublyLinkedList() = DoublyLinkedList{Any}()
+DoublyLinkedList{T}(l::AbstractLinkedList{S}) where {S,T} = DoublyLinkedList{T}(collect(l)...)
 function DoublyLinkedList{T}(elts...) where T
     l = DoublyLinkedList{T}()
     for elt in elts
@@ -95,6 +96,18 @@ function DoublyLinkedList{T}(elts...) where T
     return l
 end
 
+"""
+    l = PairedLinkedList{::Type}()
+    l = PairedLinkedList(elts...)
+
+Create a `PairedLinkedList` with nodes containing data of a specified type. 
+
+The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
+`tail` at the end of the list. The list also contains a reference to its "partner" list.
+
+The first "real" node of a list  `l` can be accessed with `l.head.next`. Similarly, the last "real" node can
+be accessed with `l.tail.prev`.
+"""
 mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
     len::Int
     partner::PairedLinkedList{T}
@@ -114,13 +127,14 @@ mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
         l.tail = PairedListNode(l)
         l.head.next = l.tail
         l.tail.prev = l.head
-        l.head.partner = partner.head
-        l.tail.partner = partner.tail
+        l.head.partner = l.head
+        l.tail.partner = l.tail
         return l
     end
 end
 
 PairedLinkedList() = PairedLinkedList{Any}()
+PairedLinkedList{T}(l::AbstractLinkedList{S}) where {S,T} = PairedLinkedList{T}(collect(l)...)
 function PairedLinkedList{T}(elts...) where T
     l = PairedLinkedList{T}()
     for elt in elts
@@ -130,20 +144,46 @@ function PairedLinkedList{T}(elts...) where T
 end
 
 """
-node = newnode(l::AbstractLinkedList, data)
+    node = newnode(list, data)
 
-Create an `AbstractListNode` containing `data` of the appropriate type for the provided list `l` 
+Create an list node containing `data` of the appropriate type for the provided `list`.
 (e.g. a `ListNode` is created for a `DoublyLinkedList`).
 """
 newnode(l::DoublyLinkedList{T}, data) where T = ListNode(l, data)
 newnode(l::PairedLinkedList{T}, data) where T = PairedListNode(l, data)
 
-Base.iterate(l::AbstractLinkedList) = l.len == 0 ? nothing : (l.head.next, l.head.next.next)
-Base.iterate(l::AbstractLinkedList, n::AbstractListNode) = n === l.tail ? nothing : (n, n.next)
+at_tail(node::AbstractListNode) = node === node.next
+
+# Iterating with a node returns the nodes themselves, and terminates at a list's tail
+struct IteratingListNodes{T}
+    start::AbstractListNode{T}
+end
+IteratingListNodes(n::AbstractListNode{T}) where T = IteratingListNodes{T}(n)
+IteratingListNodes(l::AbstractLinkedList{T}) where T = IteratingListNodes{T}(l.head.next)
+Base.iterate(node::AbstractListNode) = iterate(node, node)
+Base.iterate(iter::IteratingListNodes) = iterate(iter, iter.start)
+Base.iterate(::Union{IteratingListNodes, AbstractListNode}, node::AbstractListNode) = at_tail(node) ? nothing : (node, node.next)
+
+# iterating over a list returns the data contained in each node
+struct IteratingListData{T}
+    start::AbstractListNode{T}
+end
+IteratingListData(n::AbstractListNode{T}) where T = IteratingListData{T}(n)
+IteratingListData(l::AbstractLinkedList{T}) where T = IteratingListData{T}(l.head.next)
+Base.iterate(l::AbstractLinkedList) = iterate(l, l.head.next)
+Base.iterate(iter::IteratingListData) = iterate(iter, iter.start)
+Base.iterate(::Union{IteratingListData, AbstractLinkedList}, node::AbstractListNode) = at_tail(node) ? nothing : (node.data, node.next)
+
+"""
+    iteratenodes(list)
+
+Iterate over the nodes of the list `l`, returning the nodes themselves rather than the data they contain.
+"""
+iteratenodes(l::AbstractLinkedList) = iterate(l.head.next)
 
 Base.isempty(l::AbstractLinkedList) = l.len == 0
 Base.length(l::AbstractLinkedList) = l.len
-Base.collect(l::AbstractLinkedList{T}) where T = T[x.data for x in l]
+Base.collect(l::AbstractLinkedList{T}) where T = T[x for x in l]
 Base.eltype(::Type{<:AbstractLinkedList{T}}) where T = T
 Base.lastindex(l::AbstractLinkedList) = l.len
 
@@ -157,12 +197,14 @@ function Base.last(l::AbstractLinkedList)
     return l.tail.prev.data
 end
 
+Base.:(==)(n1::AbstractListNode, n2::AbstractListNode) = n1.data == n2.data
+
 Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{S}) where {T,S} = false
 
 function Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{T}) where T
     length(l1) == length(l2) || return false
     for (i, j) in zip(l1, l2)
-        i.data == j.data|| return false
+        i == j|| return false
     end
     return true
 end
@@ -177,7 +219,7 @@ function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
         S = typeof(f(first(l)))
         l2 = DoublyLinkedList{S}()
         for h in l
-            el = f(h.data)
+            el = f(h)
             if el isa S
                 push!(l2, el)
             else
@@ -193,8 +235,8 @@ end
 function Base.filter(f::Function, l::L) where L <: AbstractLinkedList
     l2 = L()
     for h in l
-        if f(h.data)
-            push!(l2, h.data)
+        if f(h)
+            push!(l2, h)
         end
     end
     return l2
@@ -203,7 +245,7 @@ end
 function Base.reverse(l::L) where L <: AbstractLinkedList
     l2 = L()
     for h in l
-        pushfirst!(l2, h.data)
+        pushfirst!(l2, h)
     end
     return l2
 end
@@ -211,15 +253,15 @@ end
 function Base.copy(l::L) where L <: AbstractLinkedList
     l2 = L()
     for h in l
-        push!(l2, h.data)
+        push!(l2, h)
     end
     return l2
 end
 
 """
-node = getnode(l::AbstractLinkedList, index)
+    node = getnode(l::AbstractLinkedList, index)
 
-Return the 
+Return the node at the specified index of the list.
 """
 function getnode(l::AbstractLinkedList, idx::Int)
     node = l.head
@@ -229,6 +271,7 @@ function getnode(l::AbstractLinkedList, idx::Int)
     return node
 end
 
+# getindex returns the data at the node at that index
 function Base.getindex(l::AbstractLinkedList, idx::Int)
     node = getnode(l, idx)
     return node.data
@@ -238,10 +281,13 @@ function Base.getindex(l::L, r::UnitRange) where L <: AbstractLinkedList
     @boundscheck 0 < first(r) < last(r) <= l.len || throw(BoundsError(l, r))
     l2 = L()
     @inbounds node = getnode(l, first(r))
+    node2 = l2.head
     len = length(r)
     for j in 1:len
-        push!(l2, node.data)
+        n = newnode(l2, node.data)
+        insertnode!(n, node2)
         node = node.next
+        node2 = node2.next
     end
     l2.len = len
     return l2
@@ -268,32 +314,22 @@ function Base.append!(l::AbstractLinkedList, elts...)
 end
 
 """
-deletenode!(node::ListNode)
+    deletenode!(node::ListNode)
 
 Remove `node` from the list to which it belongs, update the list's length, and return the node.
 """
-function deletenode!(node::ListNode)
+function deletenode!(node::AbstractListNode)
     prev = node.prev
     next = node.next
     prev.next = next
     next.prev = prev
-    node.list.len -= 1
-    return node
-end
-
-function deletenode!(node::PairedListNode)
-    prev = node.prev
-    next = node.next
-    partner = node.partner
-    prev.next = next
-    next.prev = prev
-    partner.partner = partner
+    haspartner(node) && removepartner!(node)
     node.list.len -= 1
     return node
 end
 
 """
-insertnode!(node, prev)
+    insertnode!(node, prev)`
 
 Insert `node` into a list after the preceding node `prev`, update the list's length, and return the node.
 
@@ -317,29 +353,13 @@ function Base.delete!(l::AbstractLinkedList, idx::Int)
     return l
 end
 
-function Base.delete!(l::DoublyLinkedList, r::UnitRange)
-    @boundscheck 0 < first(r) < last(r) <= l.len || throw(BoundsError(l, r))
-    node = getnode(l, first(r))
-    prev = node.prev
-    len = length(r)
-    for j in 1:len
-        node = node.next
-    end
-    next = node
-    prev.next = next
-    next.prev = prev
-    l.len -= len
-    return l
-end
-
-function Base.delete!(l::PairedLinkedList, r::UnitRange)
+function Base.delete!(l::AbstractLinkedList, r::UnitRange)
     @boundscheck 0 < first(r) < last(r) <= l.len || throw(BoundsError(l, r))
     @inbounds node = getnode(l, first(r))
     prev = node.prev
     len = length(r)
     for j in 1:len
-        partner = node.partner
-        partner.partner = partner
+        haspartner(node) && removepartner!(node)
         node = node.next
     end
     next = node
@@ -412,18 +432,23 @@ function Base.splice!(l::L, idx::Int, ins=_default_splice) where L <: AbstractLi
     data = node.data
     prev = node.prev
     next = node.next
+    haspartner(node) && removepartner!(node)
+
     if length(ins) == 0
         prev.next = next
         next.prev = prev
         l.len -= 1
         return data
     end
-    insl = L(ins...)
-    insl.tail.prev.next = next
-    insl.head.next.prev = prev
-    prev.next = insl.head.next
-    next.prev = insl.tail.prev
-    l.len += insl.len - 1
+    for insdata in ins
+        node = newnode(l, insdata)
+        node.prev = prev
+        node.prev.next = node
+        prev = node
+    end
+    node.next = next
+    next.prev = node
+    l.len += length(ins) - 1
     return data
 end
 
@@ -436,6 +461,7 @@ function Base.splice!(l::L, r::AbstractUnitRange{<:Integer}, ins=_default_splice
     for i in 1:len
         push!(data, node.data)
         node = node.next
+        haspartner(node) && removepartner!(node)
     end
     next = len > 0 ? node : node.next
     if length(ins) == 0
@@ -444,40 +470,64 @@ function Base.splice!(l::L, r::AbstractUnitRange{<:Integer}, ins=_default_splice
         l.len -= len
         return data
     end
-    insl = L(ins...)
-    insl.tail.prev.next = next
-    insl.head.next.prev = prev
-    prev.next = insl.head.next
-    next.prev = insl.tail.prev
-    l.len += insl.len - len
+    for insdata in ins
+        node = newnode(l, insdata)
+        node.prev = prev
+        node.prev.next = node
+        prev = node
+    end
+    node.next = next
+    next.prev = node
+    l.len += length(ins) - len
     return data
 end
 
 
 """
-ispaired(node::PairedListNode) -> Bool
+    haspartner(node::PairedListNode) -> Bool
 
 Return `true` if `node` has a partner (that is, `node.partner !== node`), and false otherwise. 
 """
-ispaired(node::PairedListNode) = (node.partner !== node)
+haspartner(node::PairedListNode) = (node.partner !== node)
+haspartner(::ListNode) = false
 
 """
-removepair!(node::PairedListNode)
+    addpartner!(node, partner)
+
+Add a link between a `node` and another node to be assigned its `partner`. If either node previously had
+a partner, the prior link is removed.
+"""
+function addpartner!(node::PairedListNode{T}, partner::PairedListNode{T}) where T
+    # ensure there are no orphaned partners
+    if haspartner(node)
+        removepartner!(node)
+    end
+    if haspartner(partner)
+        removepartner!(partner)
+    end
+
+    node.partner = partner
+    partner.partner = node
+    return node
+end
+
+"""
+    removepartner!(node)
 
 Remove the link between `node` and its partner (if `node` is paired) and return `node`.
 """
-function removepair!(node::PairedListNode)
-    if ispaired(node)
+function removepartner!(node::PairedListNode)
+    if haspartner(node)
         partner = node.partner
         node.partner = node
         partner.partner = partner
     end
     return node
 end
-
-function removepair!(l::PairedLinkedList, idx::Int)
+removepartner!(node::ListNode) = node;
+function removepartner!(l::AbstractLinkedList, idx::Int)
     node = getnode(l, idx)
-    return removepair!(node)
+    return removepartner!(node)
 end
 
 
