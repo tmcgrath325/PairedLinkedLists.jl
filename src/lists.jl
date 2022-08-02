@@ -98,7 +98,7 @@ end
 
 """
     l = PairedLinkedList{::Type}()
-    l = PairedLinkedList(elts...)
+    l = PairedLinkedList{::Type}(elts...)
 
 Create a `PairedLinkedList` with nodes containing data of a specified type. 
 
@@ -128,8 +128,6 @@ mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
         l.tail = PairedListNode(l)
         l.head.next = l.tail
         l.tail.prev = l.head
-        l.head.partner = l.head
-        l.tail.partner = l.tail
         return l
     end
 end
@@ -153,34 +151,39 @@ Create an list node containing `data` of the appropriate type for the provided `
 newnode(l::DoublyLinkedList{T}, data) where T = ListNode(l, data)
 newnode(l::PairedLinkedList{T}, data) where T = PairedListNode(l, data)
 
+
+at_head(node::AbstractListNode) = node === node.prev
 at_tail(node::AbstractListNode) = node === node.next
 
 # Iterating with a node returns the nodes themselves, and terminates at a list's tail
+Base.iterate(node::AbstractListNode) = iterate(node, node)
+Base.iterate(::AbstractListNode, node::AbstractListNode) = at_tail(node) ? nothing : (node, node.next)
 struct IteratingListNodes{T}
     start::AbstractListNode{T}
+    rev::Bool
+    function IteratingListNodes(start::AbstractListNode{T}; rev::Bool = false) where T
+        return new{T}(start, rev)
+    end
 end
-IteratingListNodes(n::AbstractListNode{T}) where T = IteratingListNodes{T}(n)
-IteratingListNodes(l::AbstractLinkedList{T}) where T = IteratingListNodes{T}(l.head.next)
+IteratingListNodes(l::AbstractLinkedList; rev::Bool = false) = IteratingListNodes(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(node::AbstractListNode) = iterate(node, node)
 Base.iterate(iter::IteratingListNodes) = iterate(iter, iter.start)
-Base.iterate(::Union{IteratingListNodes, AbstractListNode}, node::AbstractListNode) = at_tail(node) ? nothing : (node, node.next)
+Base.iterate(iter::IteratingListNodes{T}, node::AbstractListNode{T}) where T = iter.rev ? (at_head(node) ? nothing : (node, node.prev)) : (at_tail(node) ? nothing : (node, node.next))
 
 # iterating over a list returns the data contained in each node
+Base.iterate(l::AbstractLinkedList) = iterate(l, l.head.next)
+Base.iterate(::AbstractLinkedList, node::AbstractListNode) = at_tail(node) ? nothing : (node.data, node.next)
 struct IteratingListData{T}
     start::AbstractListNode{T}
+    rev::Bool
+    function IteratingListData(start::AbstractListNode{T}; rev::Bool = false) where T
+        return new{T}(start, rev)
+    end
 end
-IteratingListData(n::AbstractListNode{T}) where T = IteratingListData{T}(n)
-IteratingListData(l::AbstractLinkedList{T}) where T = IteratingListData{T}(l.head.next)
-Base.iterate(l::AbstractLinkedList) = iterate(l, l.head.next)
+IteratingListData(l::AbstractLinkedList{T}; rev::Bool = false) where T = IteratingListData(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(iter::IteratingListData) = iterate(iter, iter.start)
-Base.iterate(::Union{IteratingListData, AbstractLinkedList}, node::AbstractListNode) = at_tail(node) ? nothing : (node.data, node.next)
+Base.iterate(iter::IteratingListData{T}, node::AbstractListNode{T}) where T =  iter.rev ? (at_head(node) ? nothing : (node.data, node.prev)) : (at_tail(node) ? nothing : (node.data, node.next))
 
-"""
-    iteratenodes(list)
-
-Iterate over the nodes of the list `l`, returning the nodes themselves rather than the data they contain.
-"""
-iteratenodes(l::AbstractLinkedList) = iterate(l.head.next)
 
 Base.isempty(l::AbstractLinkedList) = l.len == 0
 Base.length(l::AbstractLinkedList) = l.len

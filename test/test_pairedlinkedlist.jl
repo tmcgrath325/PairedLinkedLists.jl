@@ -4,7 +4,6 @@
         l1 = PairedLinkedList{Int}()
         @test PairedLinkedList() == PairedLinkedList{Any}()
         @test iterate(l1) === nothing
-        @test iteratenodes(l1) === nothing
         @test isempty(l1)
         @test length(l1) == 0
         @test lastindex(l1) == 0
@@ -28,8 +27,14 @@
                 for (i,data) in enumerate(IteratingListData(l))
                     @test data == i
                 end
+                for (i,data) in enumerate(IteratingListData(l; rev=true))
+                    @test data == n-i+1
+                end
                 for (i,data) in enumerate(IteratingListData(l.head.next.next))
                     @test data == i+1
+                end
+                for (i,data) in enumerate(IteratingListData(l.tail.prev.prev; rev=true))
+                    @test data == n-i
                 end
             end
 
@@ -40,8 +45,14 @@
                 for (i,node) in enumerate(IteratingListNodes(l))
                     @test node == newnode(l,i)
                 end
+                for (i,node) in enumerate(IteratingListNodes(l; rev=true))
+                    @test node == newnode(l,n-i+1)
+                end
                 for (i,node) in enumerate(IteratingListNodes(l.head.next.next))
                     @test node == newnode(l,i+1)
+                end
+                for (i,node) in enumerate(IteratingListNodes(l.tail.prev.prev; rev=true))
+                    @test node == newnode(l,n-i)
                 end
             end
         end
