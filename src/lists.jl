@@ -190,6 +190,7 @@ Base.length(l::AbstractLinkedList) = l.len
 Base.collect(l::AbstractLinkedList{T}) where T = T[x for x in l]
 Base.eltype(::Type{<:AbstractLinkedList{T}}) where T = T
 Base.lastindex(l::AbstractLinkedList) = l.len
+Base.keys(l::AbstractLinkedList) = LinearIndices(1:l.len)
 
 function Base.first(l::AbstractLinkedList)
     isempty(l) && throw(ArgumentError("List is empty"))
