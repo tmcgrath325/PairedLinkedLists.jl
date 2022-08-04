@@ -263,6 +263,13 @@ function Base.copy(l::L) where L <: AbstractLinkedList
     return l2
 end
 
+function Base.empty!(l::AbstractLinkedList)
+    removepair!(l)
+    l.head.next = l.tail
+    l.tail.prev = l.head
+    return l
+end
+
 """
     node = getnode(l::AbstractLinkedList, index)
 
