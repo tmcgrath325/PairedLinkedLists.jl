@@ -17,8 +17,50 @@
     @testset "core functionality" begin
         n = 10
 
+        @testset "iterate" begin
+            l = DoublyLinkedList{Int}(1:n...)
+
+            @testset "data" begin
+                for (i,data) in enumerate(l)
+                    @test data == i
+                end
+                for (i,data) in enumerate(IteratingListData(l))
+                    @test data == i
+                end
+                for (i,data) in enumerate(IteratingListData(l; rev=true))
+                    @test data == n-i+1
+                end
+                for (i,data) in enumerate(IteratingListData(l.head.next.next))
+                    @test data == i+1
+                end
+                for (i,data) in enumerate(IteratingListData(l.tail.prev.prev; rev=true))
+                    @test data == n-i
+                end
+            end
+
+            @testset "nodes" begin
+                for (i,node) in enumerate(l.head.next)
+                    @test node == newnode(l,i)
+                end
+                for (i,node) in enumerate(IteratingListNodes(l))
+                    @test node == newnode(l,i)
+                end
+                for (i,node) in enumerate(IteratingListNodes(l; rev=true))
+                    @test node == newnode(l,n-i+1)
+                end
+                for (i,node) in enumerate(IteratingListNodes(l.head.next.next))
+                    @test node == newnode(l,i+1)
+                end
+                for (i,node) in enumerate(IteratingListNodes(l.tail.prev.prev; rev=true))
+                    @test node == newnode(l,n-i)
+                end
+            end
+        end
+
         @testset "push back / pop back" begin
             l = DoublyLinkedList{Int}()
+            dummy_list = DoublyLinkedList{Int}()
+            @test_throws ArgumentError insertnode!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
                 for i = 1:n
@@ -36,13 +78,13 @@
                     @test length(l) == i
                     @test isempty(l) == false
                     for (j, k) in enumerate(l)
-                        @test j == k.data
+                        @test j == k
                     end
                     if i > 3
                         l1 = DoublyLinkedList{Int32}(1:i...)
                         io = IOBuffer()
-                        @test sprint(io -> show(io, iterate(l1))) == "(ListNode{Int32}(1), ListNode{Int32}(2))"
-                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(ListNode{Int32}(2), ListNode{Int32}(3))"
+                        @test sprint(io -> show(io, iterate(l1))) == "(1, ListNode{Int32}(2))"
+                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, ListNode{Int32}(3))"
                     end
                     cl = collect(l)
                     @test isa(cl, Vector{Int})
@@ -256,31 +298,62 @@
         r = Int[]
         m = 100
 
+        # here for Julia 1.0 compatibility
+        function popat!(a::Vector, i::Int64)
+            val = a[i]
+            deleteat!(a, i)
+            return val
+        end
+
         for k = 1 : m
-            la = rand(1:20)
+            la = rand(2:20)
             x = rand(1:1000, la)
 
             for i = 1 : la
-                if rand(Bool)
+                if 3*rand() < 1
                     push!(r, x[i])
                     push!(l, x[i])
-                else
+                elseif rand(Bool)
                     pushfirst!(r, x[i])
                     pushfirst!(l, x[i])
+                else
+                    idx = idx = rand(1:length(r)+1)
+                    insert!(r, idx, x[i])
+                    insert!(l, idx, x[i])
                 end
             end
 
             @test length(l) == length(r)
             @test collect(l) == r
 
-            lr = rand(1:length(r))
+            lr = rand(0:length(r)-1)
             for i = 1 : lr
-                if rand(Bool)
+                if 3*rand() < 1
                     pop!(r)
                     pop!(l)
-                else
+                elseif rand(Bool)
                     popfirst!(r)
                     popfirst!(l)
+                else
+                    idx = rand([1:length(r)]...)
+                    popat!(r, idx)
+                    PairedLinkedLists.popat!(l, idx)
+                end
+            end
+
+            @test length(l) == length(r)
+            @test collect(l) == r
+
+            ls = rand(0:length(r))
+            x = rand(1:1000, 2*ls)
+            for i = 1 : ls
+                idx = rand(1:length(r))
+                if rand(Bool)
+                    splice!(r, idx)
+                    splice!(l, idx)
+                else
+                    splice!(r, idx, x[i])
+                    splice!(l, idx, x[i])
                 end
             end
 
