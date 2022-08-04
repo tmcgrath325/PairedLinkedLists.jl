@@ -2,6 +2,7 @@ abstract type AbstractListNode{T} end
 abstract type AbstractLinkedList{T} end
 abstract type AbstractDoublyLinkedList{T} <: AbstractLinkedList{T} end
 abstract type AbstractPairedLinkedList{T} <: AbstractLinkedList{T} end
+abstract type PeekLinkedList{T,L} <: AbstractLinkedList{T} end
 
 """
     node = ListNode(list::DoublyLinkedList, data)
@@ -58,7 +59,45 @@ mutable struct PairedListNode{T} <: AbstractListNode{T}
         node.partner = node
         return node
     end
+    function PairedListNode(list::AbstractPairedLinkedList{T}, data, partner::PairedListNode{T}) where T
+        node = new{T}(list, data)
+        node.next = node
+        node.prev = node
+        node.partner = node
+        addpartner!(node, partner)
+        return node
+    end
 end
+
+"""
+"""
+mutable struct PeekListNode{T,N} <: AbstractListNode{T, N<:AbstractListNode{T}}
+    list::AbstractPeekLinkedList{T}
+    data::T
+    prev::PeekListNode{T}
+    next::PeekListNode{T}
+    peek::N
+    function PeekListNode(list::AbstractPeekLinkedList{T}) where T
+        node = new{T}(list)
+        node.next = node
+        node.prev = node
+        return node
+    end
+    function PeekListNode(list::AbstractPeekLinkedList{T}, data) where T
+        node = new{T}(list, data)
+        node.next = node
+        node.prev = node
+        return node
+    end
+    function PeekListNode(list::AbstractPeekLinkedList{T}, data, peek) where T
+        node = new{T}(list, data)
+        node.next = node
+        node.prev = node
+        node.peek = peek
+        return node
+    end
+end
+
 
 """
     l = DoublyLinkedList{::Type}()
