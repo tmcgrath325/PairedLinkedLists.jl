@@ -80,7 +80,7 @@
                     for (j, k) in enumerate(l)
                         @test j == k
                     end
-                    if i > 3
+                    if i > 3 && VERSION > VersionNumber(1,7,0)
                         l1 = PairedLinkedList{Int32}(1:i...)
                         io = IOBuffer()
                         @test sprint(io -> show(io, iterate(l1))) == "(1, PairedListNode{Int32, PairedLinkedList{Int32}}(2))"

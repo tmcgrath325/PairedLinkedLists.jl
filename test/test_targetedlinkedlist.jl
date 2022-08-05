@@ -79,13 +79,11 @@
                     for (j, k) in enumerate(l)
                         @test j == k
                     end
-                    if i > 3
+                    if i > 3 && VERSION > VersionNumber(1,7,0)
                         l1 = TargetedLinkedList{Int32,DoublyLinkedList{Int32},ListNode{Int32,DoublyLinkedList{Int32}}}(1:i...)
                         io = IOBuffer()
-                        if VERSION > VersionNumber(1,7,0)   # type parameters are spaced differently in older versions
-                            @test sprint(io -> show(io, iterate(l1))) == "(1, TargetedListNode{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(2))"
-                            @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, TargetedListNode{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(3))"
-                        end
+                        @test sprint(io -> show(io, iterate(l1))) == "(1, TargetedListNode{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(2))"
+                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, TargetedListNode{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(3))"
                     end
                     cl = collect(l)
                     @test isa(cl, Vector{Int})
