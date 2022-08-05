@@ -1,8 +1,8 @@
-abstract type AbstractListNode{T} end
+abstract type AbstractListNode{T,L} end
 abstract type AbstractLinkedList{T} end
 abstract type AbstractDoublyLinkedList{T} <: AbstractLinkedList{T} end
 abstract type AbstractPairedLinkedList{T} <: AbstractLinkedList{T} end
-abstract type PeekLinkedList{T,L} <: AbstractLinkedList{T} end
+abstract type AbstractTargetedLinkedList{T,L,N} <: AbstractPairedLinkedList{T} end
 
 """
     node = ListNode(list::DoublyLinkedList, data)
@@ -10,19 +10,19 @@ abstract type PeekLinkedList{T,L} <: AbstractLinkedList{T} end
 Create a `ListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
 the provided `data`, a link `prev` to the preceding node, and a link `next` to the following node.
 """
-mutable struct ListNode{T} <: AbstractListNode{T}
-    list::AbstractDoublyLinkedList{T}
+mutable struct ListNode{T,L<:AbstractDoublyLinkedList{T}} <: AbstractListNode{T,L}
+    list::L
     data::T
-    prev::ListNode{T}
-    next::ListNode{T}
-    function ListNode(list::AbstractDoublyLinkedList{T}) where T
-        node = new{T}(list)
+    prev::ListNode{T,L}
+    next::ListNode{T,L}
+    function ListNode{T,L}(list::L) where {T,L<:AbstractDoublyLinkedList{T}}
+        node = new{T,L}(list)
         node.next = node
         node.prev = node
         return node
     end
-    function ListNode(list::AbstractDoublyLinkedList{T}, data) where T
-        node = new{T}(list, data)
+    function ListNode{T,L}(list::L, data) where {T,L<:AbstractDoublyLinkedList{T}}
+        node = new{T,L}(list, data)
         node.next = node
         node.prev = node
         return node
@@ -33,67 +33,75 @@ end
     node = PairedListNode(list::PairedLinkedList, data)
 
 Create a `PairedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
-the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and link `partner` to another
+the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and double-link `partner` to another
 `PairedListNode`.
 
 A node's `partner` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `partner`
-of its parent list.
+of its parent `list`.
 """
-mutable struct PairedListNode{T} <: AbstractListNode{T}
-    list::AbstractPairedLinkedList{T}
+mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractListNode{T,L}
+    list::L
     data::T
-    prev::PairedListNode{T}
-    next::PairedListNode{T}
-    partner::PairedListNode{T}
-    function PairedListNode(list::AbstractPairedLinkedList{T}) where T
-        node = new{T}(list)
+    prev::PairedListNode{T,L}
+    next::PairedListNode{T,L}
+    partner::PairedListNode{T,L}
+    function PairedListNode{T,L}(list::L) where {T,L<:AbstractPairedLinkedList{T}}
+        node = new{T,PairedLinkedList{T}}(list)
         node.next = node
         node.prev = node
         node.partner = node
         return node
     end
-    function PairedListNode(list::AbstractPairedLinkedList{T}, data) where T
-        node = new{T}(list, data)
+    function PairedListNode{T,L}(list::L, data) where {T,L<:AbstractPairedLinkedList{T}}
+        node = new{T,L}(list, data)
         node.next = node
         node.prev = node
         node.partner = node
         return node
     end
-    function PairedListNode(list::AbstractPairedLinkedList{T}, data, partner::PairedListNode{T}) where T
-        node = new{T}(list, data)
+    function PairedListNode{T,L}(list::L, data, partner::PairedListNode{T,L}) where {T,L<:AbstractPairedLinkedList{T}}
+        node = new{T,L}(list, data)
         node.next = node
         node.prev = node
-        node.partner = node
         addpartner!(node, partner)
         return node
     end
 end
 
 """
+    node = TargetListNode(list::AbstractTargetLinkedList, data, [target::AbstractListNode])
+
+Create a `TargetListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
+the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and link `partner` to another
+list node.
+
+A node's `partner` may be undefined or a node belonging to the `partner` of its parent `list`.
 """
-mutable struct PeekListNode{T,N} <: AbstractListNode{T, N<:AbstractListNode{T}}
-    list::AbstractPeekLinkedList{T}
+mutable struct TargetedListNode{T,L<:AbstractLinkedList{T},N<:AbstractListNode{T,L},P<:AbstractTargetedLinkedList{T,L,N}} <: AbstractListNode{T,P}
+    list::P
     data::T
-    prev::PeekListNode{T}
-    next::PeekListNode{T}
-    peek::N
-    function PeekListNode(list::AbstractPeekLinkedList{T}) where T
-        node = new{T}(list)
+    prev::TargetedListNode{T,L,N,P}
+    next::TargetedListNode{T,L,N,P}
+    partner::Union{N,TargetedListNode{T,L,N,P}}
+    function TargetedListNode{T,L,N,P}(list::P) where {T,L,N,P<:AbstractTargetedLinkedList{T,L,N}}
+        node = new{T,L,N,P}(list)
         node.next = node
         node.prev = node
+        node.partner = node
         return node
     end
-    function PeekListNode(list::AbstractPeekLinkedList{T}, data) where T
-        node = new{T}(list, data)
+    function TargetedListNode{T,L,N,P}(list::P, data) where {T,L,N,P<:AbstractTargetedLinkedList{T,L,N}}
+        node = new{T,L,N,P}(list, data)
         node.next = node
         node.prev = node
+        node.partner = node
         return node
     end
-    function PeekListNode(list::AbstractPeekLinkedList{T}, data, peek) where T
-        node = new{T}(list, data)
+    function TargetedListNode{T,L,N,P}(list::P, data, partner::N) where {T,L,N,P<:AbstractTargetedLinkedList{T,L,N}}
+        node = new{T,L,N,P}(list, data)
         node.next = node
         node.prev = node
-        node.peek = peek
+        node.partner = partner
         return node
     end
 end
@@ -113,12 +121,12 @@ be accessed with `l.tail.prev`.
 """
 mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
     len::Int
-    head::ListNode{T}
-    tail::ListNode{T}
+    head::ListNode{T,DoublyLinkedList{T}}
+    tail::ListNode{T,DoublyLinkedList{T}}
     function DoublyLinkedList{T}() where T
         l = new{T}(0)
-        l.head = ListNode(l)
-        l.tail = ListNode(l)
+        l.head = ListNode{T,DoublyLinkedList{T}}(l)
+        l.tail = ListNode{T,DoublyLinkedList{T}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
@@ -126,7 +134,7 @@ mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
 end
 
 DoublyLinkedList() = DoublyLinkedList{Any}()
-DoublyLinkedList{T}(l::AbstractLinkedList{S}) where {S,T} = DoublyLinkedList{T}(collect(l)...)
+# DoublyLinkedList{T}(l::AbstractLinkedList{S}) where {S,T} = DoublyLinkedList{T}(collect(l)...)
 function DoublyLinkedList{T}(elts...) where T
     l = DoublyLinkedList{T}()
     for elt in elts
@@ -150,21 +158,21 @@ be accessed with `l.tail.prev`.
 mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
     len::Int
     partner::PairedLinkedList{T}
-    head::PairedListNode{T}
-    tail::PairedListNode{T}
+    head::PairedListNode{T,PairedLinkedList{T}}
+    tail::PairedListNode{T,PairedLinkedList{T}}
     function PairedLinkedList{T}() where T
         l = new{T}(0)
         l.partner = l
-        l.head = PairedListNode(l)
-        l.tail = PairedListNode(l)
+        l.head = PairedListNode{T,PairedLinkedList{T}}(l)
+        l.tail = PairedListNode{T,PairedLinkedList{T}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
     end
     function PairedLinkedList{T}(partner::PairedLinkedList{T}) where T
         l = new{T}(0, partner)
-        l.head = PairedListNode(l)
-        l.tail = PairedListNode(l)
+        l.head = PairedListNode{T,PairedLinkedList{T}}(l)
+        l.tail = PairedListNode{T,PairedLinkedList{T}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
@@ -172,7 +180,6 @@ mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
 end
 
 PairedLinkedList() = PairedLinkedList{Any}()
-PairedLinkedList{T}(l::AbstractLinkedList{S}) where {S,T} = PairedLinkedList{T}(collect(l)...)
 function PairedLinkedList{T}(elts...) where T
     l = PairedLinkedList{T}()
     for elt in elts
@@ -182,46 +189,93 @@ function PairedLinkedList{T}(elts...) where T
 end
 
 """
+"""
+mutable struct TargetedLinkedList{T,L<:AbstractLinkedList{T},N<:AbstractListNode{T,L}} <: AbstractTargetedLinkedList{T,L,N}
+    len::Int
+    partner::Union{L,TargetedLinkedList{T,L,N}}
+    head::TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}
+    tail::TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}
+    function TargetedLinkedList{T,L,N}() where {T,L,N}
+        l = new{T,L,N}(0)
+        l.partner = l
+        l.head = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}(l)
+        l.tail = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}(l)
+        l.head.next = l.tail
+        l.tail.prev = l.head
+        return l
+    end
+    function TargetedLinkedList{T,L,N}(partner::L) where {T,L,N}
+        l = new{T,L,N}(0, partner)
+        l.head = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}(l)
+        l.tail = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}(l)
+        l.head.next = l.tail
+        l.tail.prev = l.head
+        return l
+    end
+end
+
+TargetedLinkedList(l::L) where {T, L<:AbstractLinkedList{T}} = TargetedLinkedList{T,L,nodetype(L)}(l)
+function TargetedLinkedList{T,L,N}(elts...) where {T,L,N}
+    l = TargetedLinkedList{T,L,N}()
+    for elt in elts
+        push!(l, elt)
+    end
+    return l
+end
+
+
+"""
+    t = nodetype(::AbstractLinkedList)
+    t = nodetype(::Type{<:AbstractLinkedList})
+
+Return the type of the nodes contained in the list.
+"""
+nodetype(::Type{<:AbstractDoublyLinkedList{T}}) where T = ListNode{T,DoublyLinkedList{T}}
+nodetype(::Type{<:AbstractPairedLinkedList{T}}) where T = PairedListNode{T,PairedLinkedList{T}}
+nodetype(::Type{<:AbstractTargetedLinkedList{T,L,N}}) where {T,L,N} = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}
+nodetype(l::AbstractLinkedList) = nodetype(typeof(l))
+
+
+"""
     node = newnode(list, data)
 
 Create an list node containing `data` of the appropriate type for the provided `list`.
 (e.g. a `ListNode` is created for a `DoublyLinkedList`).
 """
-newnode(l::DoublyLinkedList{T}, data) where T = ListNode(l, data)
-newnode(l::PairedLinkedList{T}, data) where T = PairedListNode(l, data)
+newnode(l::AbstractLinkedList, data) = nodetype(l)(l, data)
 
-
+# checks to see if the node is the first or last one
 at_head(node::AbstractListNode) = node === node.prev
 at_tail(node::AbstractListNode) = node === node.next
 
 # Iterating with a node returns the nodes themselves, and terminates at a list's tail
 Base.iterate(node::AbstractListNode) = iterate(node, node)
 Base.iterate(::AbstractListNode, node::AbstractListNode) = at_tail(node) ? nothing : (node, node.next)
-struct IteratingListNodes{T}
-    start::AbstractListNode{T}
+struct IteratingListNodes{T,L}
+    start::AbstractListNode{T,L}
     rev::Bool
-    function IteratingListNodes(start::AbstractListNode{T}; rev::Bool = false) where T
-        return new{T}(start, rev)
+    function IteratingListNodes(start::AbstractListNode{T,L}; rev::Bool = false) where {T,L}
+        return new{T,L}(start, rev)
     end
 end
 IteratingListNodes(l::AbstractLinkedList; rev::Bool = false) = IteratingListNodes(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(node::AbstractListNode) = iterate(node, node)
 Base.iterate(iter::IteratingListNodes) = iterate(iter, iter.start)
-Base.iterate(iter::IteratingListNodes{T}, node::AbstractListNode{T}) where T = iter.rev ? (at_head(node) ? nothing : (node, node.prev)) : (at_tail(node) ? nothing : (node, node.next))
+Base.iterate(iter::IteratingListNodes{T}, node::AbstractListNode{T,L}) where {T,L} = iter.rev ? (at_head(node) ? nothing : (node, node.prev)) : (at_tail(node) ? nothing : (node, node.next))
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractLinkedList) = iterate(l, l.head.next)
 Base.iterate(::AbstractLinkedList, node::AbstractListNode) = at_tail(node) ? nothing : (node.data, node.next)
-struct IteratingListData{T}
-    start::AbstractListNode{T}
+struct IteratingListData{T,L}
+    start::AbstractListNode{T,L}
     rev::Bool
-    function IteratingListData(start::AbstractListNode{T}; rev::Bool = false) where T
-        return new{T}(start, rev)
+    function IteratingListData(start::AbstractListNode{T,L}; rev::Bool = false) where {T,L}
+        return new{T,L}(start, rev)
     end
 end
 IteratingListData(l::AbstractLinkedList{T}; rev::Bool = false) where T = IteratingListData(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(iter::IteratingListData) = iterate(iter, iter.start)
-Base.iterate(iter::IteratingListData{T}, node::AbstractListNode{T}) where T =  iter.rev ? (at_head(node) ? nothing : (node.data, node.prev)) : (at_tail(node) ? nothing : (node.data, node.next))
+Base.iterate(iter::IteratingListData{T}, node::AbstractListNode{T,L}) where {L,T} =  iter.rev ? (at_head(node) ? nothing : (node.data, node.prev)) : (at_tail(node) ? nothing : (node.data, node.next))
 
 
 Base.isempty(l::AbstractLinkedList) = l.len == 0
@@ -375,7 +429,15 @@ end
 
 Remove `node` from the list to which it belongs, update the list's length, and return the node.
 """
-function deletenode!(node::AbstractListNode)
+function deletenode!(node::Union{ListNode, TargetedListNode})
+    prev = node.prev
+    next = node.next
+    prev.next = next
+    next.prev = prev
+    node.list.len -= 1
+    return node
+end
+function deletenode!(node::PairedListNode)
     prev = node.prev
     next = node.next
     prev.next = next
@@ -392,7 +454,7 @@ Insert `node` into a list after the preceding node `prev`, update the list's len
 
 `node` and `prev` must belong to the same list.
 """
-function insertnode!(node::AbstractListNode{T}, prev::AbstractListNode{T}) where T
+function insertnode!(node::AbstractListNode{T,L}, prev::AbstractListNode{T,L}) where {T,L}
     node.list === prev.list || throw(ArgumentError("The nodes must have the same parent list."))
     if haspartner(node)
         node.partner.list === prev.list.partner || throw(ArgumentError("The node cannot be added to a list that is partnered to a different list than the node."))
@@ -549,20 +611,21 @@ end
 
 Return `true` if the provided node or list has a partner, and false otherwise. 
 """
-haspartner(node::PairedListNode) = (node.partner !== node)
-haspartner(list::PairedLinkedList) = (list.partner !== list)
-haspartner(::ListNode) = false
-haspartner(::DoublyLinkedList) = false
+haspartner(obj::Union{PairedListNode, TargetedListNode, PairedLinkedList, TargetedLinkedList}) = (obj.partner !== obj)
+haspartner(::Union{ListNode, DoublyLinkedList}) = false
 
 """
     addpartner!(node, partner_node)
     addpartner!(list, partner_list)
 
 Add a link between a the provided node or list and another object of the same type to be assigned its `partner`. 
-If either object previously had a partner, the prior link is removed.
+
+If the first object is a `PairedListNode' or a 'PairedLinkedList' and either object previously had a partner, the prior link is removed.
+
+If the first object is a `TargetedListNode` or a `TargetedLinkedList`, the second object remains unchanged.
 """
 function addpartner!(list::PairedLinkedList{T}, partner::PairedLinkedList{T}) where T
-    # ensure there are no orphaned partners and remove existing partners from the nodes
+    # remove existing partners
     if haspartner(list)
         removepartner!(list)
     end
@@ -575,9 +638,9 @@ function addpartner!(list::PairedLinkedList{T}, partner::PairedLinkedList{T}) wh
     return list
 end
 
-function addpartner!(node::PairedListNode{T}, partner::PairedListNode{T}) where T
+function addpartner!(node::PairedListNode{T,L}, partner::PairedListNode{T,L}) where {T,L}
     node.list.partner === partner.list || throw(ArgumentError("The provided nodes must belong to paired lists."))
-    # ensure there are no orphaned partners
+    # remove existing partners
     if haspartner(node)
         removepartner!(node)
     end
@@ -590,10 +653,25 @@ function addpartner!(node::PairedListNode{T}, partner::PairedListNode{T}) where 
     return node
 end
 
+function addpartner!(list::TargetedLinkedList{T,L}, partner::L) where {T,L}
+    list.partner = partner
+    return list
+end
+
+function addpartner!(node::TargetedListNode{T,L,N}, partner::N) where {T,L,N}
+    node.list.partner === partner.list || throw(ArgumentError("The provided nodes must belong to paired lists."))
+    node.partner = partner
+    return node
+end
+
 """
     removepartner!(node)
 
 Remove the link between the node or list and its partner (if the object is already paired) and return `node`.
+
+If the object is a `PairedListNode` or `PairedLinkedList`, the link will be deleted from both the object and its partner.
+
+If the object is a `TargetedListNode` or `PairedLinkedList`, the link will be deleted from only the object.
 """
 function removepartner!(node::PairedListNode)
     if haspartner(node)
@@ -603,19 +681,36 @@ function removepartner!(node::PairedListNode)
     end
     return node
 end
+function removepartner!(node::TargetedListNode)
+    if haspartner(node)
+        node.partner = node
+    end
+    return node
+end
+removepartner!(node::ListNode) = node;
+
 function removepartner!(list::PairedLinkedList)
     if haspartner(list)
         partner = list.partner
         list.partner = list
         partner.partner = partner
-        for list in IteratingListNodes(list)
-            removepartner!(list)
+        for node in IteratingListNodes(list)
+            removepartner!(node)
         end
     end
     return list
 end
-removepartner!(node::ListNode) = node;
-function removepartner!(l::PairedLinkedList, idx::Int)
+function removepartner!(list::TargetedLinkedList)
+    if haspartner(list)
+        list.partner = list
+        for node in IteratingListNodes(list)
+            removepartner!(node)
+        end
+    end
+    return list
+end
+
+function removepartner!(l::Union{PairedLinkedList,TargetedLinkedList}, idx::Int)
     node = getnode(l, idx)
     return removepartner!(node)
 end

@@ -27,8 +27,8 @@ module PairedLinkedLists
 
 export popat!
 
-export AbstractListNode, ListNode, PairedListNode
-export AbstractLinkedList, DoublyLinkedList, PairedLinkedList
+export AbstractListNode, ListNode, PairedListNode, TargetedListNode
+export AbstractLinkedList, DoublyLinkedList, PairedLinkedList, TargetedLinkedList
 export IteratingListNodes, IteratingListData
 export iteratenodes, getnode, newnode, deletenode!, insertnode!
 export haspartner, addpartner!, removepartner!

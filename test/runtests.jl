@@ -3,6 +3,7 @@ using Test
 
 tests = ["doublylinkedlist",
          "pairedlinkedlist",
+         "targetedlinkedlist"
         ]
 
 @testset "PairedLinkedLists" begin

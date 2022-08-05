@@ -83,8 +83,8 @@
                     if i > 3
                         l1 = DoublyLinkedList{Int32}(1:i...)
                         io = IOBuffer()
-                        @test sprint(io -> show(io, iterate(l1))) == "(1, ListNode{Int32}(2))"
-                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, ListNode{Int32}(3))"
+                        @test sprint(io -> show(io, iterate(l1))) == "(1, ListNode{Int32, DoublyLinkedList{Int32}}(2))"
+                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, ListNode{Int32, DoublyLinkedList{Int32}}(3))"
                     end
                     cl = collect(l)
                     @test isa(cl, Vector{Int})
