@@ -1,8 +1,7 @@
-@testset "PairedLinkedList" begin
+@testset "TargetedLinkedList" begin
 
     @testset "empty list" begin
-        l1 = PairedLinkedList{Int}()
-        @test PairedLinkedList() == PairedLinkedList{Any}()
+        l1 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
         @test iterate(l1) === nothing
         @test isempty(l1)
         @test length(l1) == 0
@@ -18,7 +17,7 @@
         n = 10
 
         @testset "iterate" begin
-            l = PairedLinkedList{Int}(1:n...)
+            l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
 
             @testset "data" begin
                 for (i,data) in enumerate(l)
@@ -58,8 +57,8 @@
         end
 
         @testset "push back / pop back" begin
-            l = PairedLinkedList{Int}()
-            dummy_list = PairedLinkedList{Int}()
+            l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+            dummy_list = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
             @test_throws ArgumentError insertnode!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
@@ -68,10 +67,10 @@
                     @test last(l) == i
                     if i > 4
                         @test getindex(l, i) == i
-                        @test getindex(l, 1:floor(Int, i/2)) == PairedLinkedList{Int}(1:floor(Int, i/2)...)
-                        @test l[1:floor(Int, i/2)] == PairedLinkedList{Int}(1:floor(Int, i/2)...)
+                        @test getindex(l, 1:floor(Int, i/2)) == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:floor(Int, i/2)...)
+                        @test l[1:floor(Int, i/2)] == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:floor(Int, i/2)...)
                         setindex!(l, 0, i - 2)
-                        @test l == PairedLinkedList{Int}(1:i-3..., 0, i-1:i...)
+                        @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:i-3..., 0, i-1:i...)
                         setindex!(l, i - 2, i - 2)
                     end
                     @test lastindex(l) == i
@@ -81,10 +80,10 @@
                         @test j == k
                     end
                     if i > 3 && VERSION > VersionNumber(1,7,0)
-                        l1 = PairedLinkedList{Int32}(1:i...)
+                        l1 = TargetedLinkedList{Int32,DoublyLinkedList{Int32},ListNode{Int32,DoublyLinkedList{Int32}}}(1:i...)
                         io = IOBuffer()
-                        @test sprint(io -> show(io, iterate(l1))) == "(1, PairedListNode{Int32, PairedLinkedList{Int32}}(2))"
-                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, PairedListNode{Int32, PairedLinkedList{Int32}}(3))"
+                        @test sprint(io -> show(io, iterate(l1))) == "(1, TargetedListNode{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(2))"
+                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, TargetedListNode{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(3))"
                     end
                     cl = collect(l)
                     @test isa(cl, Vector{Int})
@@ -105,7 +104,7 @@
         end
 
         @testset "push front / pop front" begin
-            l = PairedLinkedList{Int}()
+            l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
 
             @testset "push front" begin
                 for i = 1:n
@@ -134,32 +133,31 @@
 
         @testset "append / delete / copy / reverse" begin
             for i = 1:n
-                l = PairedLinkedList{Int}(1:n...)
-                dummy_list = PairedLinkedList{Int}()
+                l0 = DoublyLinkedList{Int}(1:n...)
+                l = TargetedLinkedList(l0)
+                push!(l, 1:n...)
 
                 @testset "append" begin
-                    l2 = PairedLinkedList{Int}(n+1:2n...)
-                    addpartner!(l2, dummy_list)
-                    addpartner!(l2.head.next, dummy_list.head)
-                    @test_throws ArgumentError append!(l, l2)
-                    removepartner!(l2)
+                    l2 = TargetedLinkedList(l0)
+                    push!(l2, n+1:2n...)
+                    @test_throws MethodError append!(l, l0)
                     append!(l, l2)
-                    @test l == PairedLinkedList{Int}(1:2n...)
-                    @test collect(l) == collect(PairedLinkedList{Int}(1:2n...))
-                    l3 = PairedLinkedList{Int}(1:n...)
+                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...)
+                    @test collect(l) == collect(TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...))
+                    l3 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
                     append!(l3, n+1:2n...)
-                    @test l3 == PairedLinkedList{Int}(1:2n...)
-                    @test collect(l3) == collect(PairedLinkedList{Int}(1:2n...))
+                    @test l3 == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...)
+                    @test collect(l3) == collect(TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...))
                 end
 
                 @testset "delete" begin
                     delete!(l, n+1:2n)
-                    @test l == PairedLinkedList{Int}(1:n...)
+                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
                     for i = n:-1:1
                         delete!(l, i)
                     end
-                    @test l == PairedLinkedList{Int}()
-                    l = PairedLinkedList{Int}(1:n...)
+                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+                    l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
                     @test_throws BoundsError delete!(l, n-1:2n)
                     @test_throws BoundsError delete!(l, 2n)
                 end
@@ -170,7 +168,7 @@
                 end
 
                 @testset "reverse" begin
-                    l2 = PairedLinkedList{Int}(n:-1:1...)
+                    l2 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(n:-1:1...)
                     @test l == reverse(l2)
                 end
             end
@@ -178,21 +176,21 @@
 
         @testset "insert / popat" begin
             @testset "insert" begin
-                l = PairedLinkedList{Int}(1:n...)
+                l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
                 @test_throws BoundsError insert!(l, 0, 0)
                 @test_throws BoundsError insert!(l, n+2, 0)
-                @test insert!(l, n+1, n+1) == PairedLinkedList{Int}(1:n+1...)
-                @test insert!(l, 1, 0) == PairedLinkedList{Int}(0:n+1...)
-                @test insert!(l, n+2, -1) == PairedLinkedList{Int}(0:n..., -1, n+1)
+                @test insert!(l, n+1, n+1) == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n+1...)
+                @test insert!(l, 1, 0) == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(0:n+1...)
+                @test insert!(l, n+2, -1) == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(0:n..., -1, n+1)
                 for i=n:-1:1
                     insert!(l, n+2, i)
                 end
-                @test l == PairedLinkedList{Int}(0:n..., 1:n..., -1, n+1)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(0:n..., 1:n..., -1, n+1)
                 @test l.len == 2n + 3
             end
 
             @testset "popat" begin
-                l = PairedLinkedList{Int}(1:n...)
+                l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
                 @test_throws BoundsError popat!(l, 0)
                 @test_throws BoundsError popat!(l, n+1)
                 @test popat!(l, 0, missing) === missing
@@ -200,18 +198,18 @@
                 for i=2:n-1
                     @test popat!(l, 2) == i
                 end
-                @test l == PairedLinkedList{Int}(1,n)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1,n)
                 @test l.len == 2
 
-                l2 = PairedLinkedList{Int}(1:n...)
+                l2 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
                 for i=n-1:-1:2
                     @test popat!(l2, l2.len-1, 0) == i
                 end
-                @test l2 == PairedLinkedList{Int}(1,n)
+                @test l2 == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1,n)
                 @test l2.len == 2
                 @test popat!(l2, 1) == 1
                 @test popat!(l2, 1) == n
-                @test l2 == PairedLinkedList{Int}()
+                @test l2 == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
                 @test l2.len == 0
                 @test_throws BoundsError popat!(l2, 1)
             end
@@ -219,77 +217,78 @@
 
         @testset "splice" begin
             @testset "no replacement" begin
-                l = PairedLinkedList{Int}(1:2n...)
+                l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...)
                 @test splice!(l, n:1) == Int[]
-                @test l == PairedLinkedList{Int}(1:2n...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...)
                 @test collect(n+1:2n) == splice!(l, n+1:2n)
-                @test l == PairedLinkedList{Int}(1:n...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
                 for i = n:-1:1
                     @test i == splice!(l, i)
                 end
-                @test l == PairedLinkedList{Int}()
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
                 @test_throws BoundsError splice!(l, 1)
                 
             end
             @testset "with replacement" begin
-                l = PairedLinkedList{Int}(1)  
+                l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1)  
                 for i = 2:n
                     @test splice!(l, i-1:i-2, i) == Int[]
                     @test last(l) == i
                     @test l.len == i
                 end
-                @test l == PairedLinkedList{Int}(1:n...,)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...,)
                 for i = 1:n
                     @test splice!(l, 1:0, i) == Int[]
                     @test first(l) == 1
                     @test l[2] == i
                     @test l.len == i + n
                 end
-                @test l == PairedLinkedList{Int}(1, n:-1:1..., 2:n...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1, n:-1:1..., 2:n...)
                 previousdata = l[1:l.len]
                 for i = 1:2n
                     @test splice!(l, i, i+2n) == previousdata[i]
                     @test l[i] == i+2n
                 end
-                @test l == PairedLinkedList{Int}(2n+1:4n...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(2n+1:4n...)
                 @test splice!(l, n+1:2n, [3n+1, 3n+2]) == [3n+1:4n...,]
-                @test l == PairedLinkedList{Int}(2n+1:3n+2...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(2n+1:3n+2...)
                 @test l.len == n+2
                 for i=1:n+2
                     @test splice!(l, i, -i) == i+2n
                 end
-                @test l == PairedLinkedList{Int}(-1:-1:-n-2...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(-1:-1:-n-2...)
                 @test l.len == n+2
                 @test splice!(l, 1:n+2, 0) == collect(-1:-1:-n-2)
-                @test l == PairedLinkedList{Int}(0)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(0)
                 @test l.len == 1
             end
         end
 
         @testset "partners" begin
-            l1 = PairedLinkedList{Int}(1:n...)  
-            l2 = PairedLinkedList{Int}(1:n...)
-            @test_throws ArgumentError addpartner!(newnode(l1, 1), newnode(l2, 1))
-            addpartner!(l1, l2)
+            l0 = DoublyLinkedList{Int}(1:n...)
+            l1 = TargetedLinkedList(l0)  
+            push!(l1, 1:n...)
+            l2 = TargetedLinkedList(l1)
+            push!(l2, 1:n...)
+            @test_throws MethodError addpartner!(newnode(l1, 1), newnode(l2, 1))
+            @test_throws MethodError addpartner!(newnode(l2, 1), newnode(l0, 1))
 
             @testset "add" begin
                 for i=1:n
-                    node1 = getnode(l1, 1)
-                    node2 = getnode(l2, i)
+                    node1 = getnode(l1, i)
+                    node2 = getnode(l2, 1)
                     prevpartner = node1.partner
-                    addpartner!(node1, node2)
-                    @test node1.partner === node2 && node2.partner === node1
-                    @test haspartner(node1) && haspartner(node2)
-                    if i != 1
-                        @test prevpartner.partner === prevpartner
-                        @test !haspartner(prevpartner)
-                    end
+                    addpartner!(node2, node1)
+                    @test node2.partner === node1 && node1.partner === node1
+                    @test !haspartner(node1) && haspartner(node2)
                 end
 
                 for i=1:n
+                    node0 = getnode(l0, i)
                     node1 = getnode(l1, i)
                     node2 = getnode(l2, n-i+1)
-                    addpartner!(node1, node2)
+                    addpartner!(node1, node0)
+                    addpartner!(node2, node1)
                 end
                 partnersdata1 = Int[]
                 partnersdata2 = Int[]
@@ -297,42 +296,28 @@
                     push!(partnersdata1, n1.partner.data)
                     push!(partnersdata2, n2.partner.data)
                 end
-                @test partnersdata1 == partnersdata2 == [n:-1:1...]
-
-                for shift = 1:floor(n/2)
-                    for i=1:n
-                        node1 = getnode(l1, i)
-                        node2 = getnode(l2, Int(mod(i + shift - 1, n) + 1))
-                        addpartner!(node1, node2)
-                    end
-                    partnersdata1 = Int[]
-                    partnersdata2 = Int[]
-                    for (n1, n2) in zip(IteratingListNodes(l1), IteratingListNodes(l2))
-                        push!(partnersdata1, n1.partner.data)
-                        push!(partnersdata2, n2.partner.data)
-                    end
-                    @test circshift(partnersdata1, shift) == circshift(partnersdata2, -shift) == [1:n...]
-                end
+                @test partnersdata1 == [1:n...]
+                @test partnersdata2 == [n:-1:1...]
             end
 
             @testset "remove" begin
                 for i=1:n
-                    node = getnode(l1, i)
+                    node = getnode(l2, i)
                     partner = node.partner
                     removepartner!(node)
                     @test node.partner === node
-                    @test partner.partner === partner
+                    @test partner.partner === getnode(l0, n-i+1)
                 end
             end
         end
     end
 
     @testset "random operations" begin
-        l1 = PairedLinkedList{Int}()
-        l2 = PairedLinkedList{Int}()
-        addpartner!(l1, l2)
+        l1 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+        l2 = TargetedLinkedList(l1)
         r1 = Int[]
         r2 = Int[]
+        p = Int[]
         m = 100
 
         # here for Julia 1.0 compatibility
@@ -353,13 +338,16 @@
                 if 3*rand() < 1
                     push!(modr, x[i])
                     push!(modl, x[i])
+                    !modfirst && push!(p, 0)
                 elseif rand(Bool)
                     pushfirst!(modr, x[i])
                     pushfirst!(modl, x[i])
+                    !modfirst && pushfirst!(p, 0)
                 else
                     idx = idx = rand(1:length(modr)+1)
                     insert!(modr, idx, x[i])
                     insert!(modl, idx, x[i])
+                    !modfirst && insert!(p, idx, 0)
                 end
             end
 
@@ -379,14 +367,20 @@
                 modl = modfirst ? l1 : l2
                 if 3*rand() < 1
                     pop!(modr)
+                    node = getnode(modl, 1)
                     pop!(modl)
+                    !modfirst && pop!(p)
                 elseif rand(Bool)
                     popfirst!(modr)
+                    node = getnode(modl, length(modl))
                     popfirst!(modl)
+                    !modfirst && popfirst!(p)
                 else
                     idx = rand([1:length(modr)]...)
                     popat!(modr, idx)
+                    node = getnode(modl, idx)
                     PairedLinkedLists.popat!(modl, idx)
+                    !modfirst && popat!(p, idx)
                 end
             end
 
@@ -408,9 +402,11 @@
                 if rand(Bool)
                     splice!(modr, idx)
                     splice!(modl, idx)
+                    !modfirst && splice!(p, idx)
                 else
                     splice!(modr, idx, x[i])
                     splice!(modl, idx, x[i])
+                    !modfirst && splice!(p, idx, 0)
                 end
             end
 
@@ -421,55 +417,30 @@
 
             for i = 1:min(length(l1), length(l2), 20)
                 if rand(Bool)
-                    i = rand(1:length(l1))
-                    j = rand(1:length(l2))
-                    addpartner!(getnode(l1, i), getnode(l2, j))
-                end
-                if rand(Bool)
-                    i = rand(1:length(l1))
-                    j = rand(1:length(l2))
-                    addpartner!(getnode(l2, j), getnode(l1, i))
+                    i = rand(1:length(l2))
+                    j = rand(1:length(l1))
+                    addpartner!(getnode(l2, i), getnode(l1, j))
+                    p[i] = l1[j]
                 end
             end
-            partnersdata1 = Int[]
-            partnersdata2 = Int[]
-            for n in IteratingListNodes(l1)
-                haspartner(n) && push!(partnersdata1, n.partner.data)
-            end
+            partnersdata = Int[]
             for n in IteratingListNodes(l2)
-                haspartner(n) && push!(partnersdata2, n.partner.partner.data)
+                haspartner(n) && push!(partnersdata, n.partner.partner.data)
             end
-            match = length(partnersdata1) == length(partnersdata2)
-            for d1 in partnersdata1
-                !match && break
-                match = d1 ∈ partnersdata2
-            end
-            @test match
+            @test partnersdata == [val for val in filter(x->x>0, p)]
 
             for i = 1:min(length(l1), length(l2), 20)
                 if rand(Bool)
-                    i = rand(1:length(l1))
-                    removepartner!(getnode(l1, i))
-                end
-                if rand(Bool)
-                    j = rand(1:length(l2))
-                    removepartner!(getnode(l2, j))
+                    i = rand(1:length(l2))
+                    removepartner!(getnode(l2, i))
+                    p[i] = 0
                 end
             end
-            partnersdata1 = Int[]
-            partnersdata2 = Int[]
-            for n in IteratingListNodes(l1)
-                haspartner(n) && push!(partnersdata1, n.partner.data)
-            end
+            partnersdata = Int[]
             for n in IteratingListNodes(l2)
-                haspartner(n) && push!(partnersdata2, n.partner.partner.data)
+                haspartner(n) && push!(partnersdata, n.partner.partner.data)
             end
-            match = length(partnersdata1) == length(partnersdata2)
-            for d1 in partnersdata1
-                !match && break
-                match = d1 ∈ partnersdata2
-            end
-            @test match
+            @test partnersdata == [val for val in filter(x->x>0, p)]
         end
     end
 end
