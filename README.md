@@ -10,7 +10,7 @@ This package provides a few implementations of doubly-linked lists in Julia:
 - `PairedLinkedList`, a doubly-linked list with mutable nodes which also contain a third link to a node in another `PairedLinkedList`.
 - `TargetedLinkedList`, a doubly-linked list with mutable nodes which also contain a third link to a node in another list, which can be a `DoublyLinkedList`,`PairedLinkedList`, or a `TargetedLinkedList`.
 
-The lists support many of the base method for arrays:
+The lists support many of the base methods for arrays:
 ```julia
 l = DoublyLinkedList{T}()         # initialize an empty list of type T
 l = DoublyLinkedList{T}(elts...)  # initialize a list with elements of type T
