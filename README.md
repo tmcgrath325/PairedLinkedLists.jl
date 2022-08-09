@@ -48,10 +48,10 @@ List nodes, rather than the data they contain, can be accessed via `getnode()`. 
 ```julia
 julia> using PairedLinkedLists;
 
-julia> l = DoublyLinkedList{Int}(1:6...)
+julia> l = DoublyLinkedList{Int}(1:5...)
 DoublyLinkedList{Int64}(1, 2, 3, 4, 5)
 
-julia> node = getnode(l,5)
+julia> node = getnode(l,3)
 ListNode{Int64, DoublyLinkedList{Int64}}(3)
 
 julia> node.next
