@@ -8,13 +8,23 @@ abstract type AbstractTargetedLinkedList{T,L,N} <: AbstractPairedLinkedList{T} e
     node = ListNode(list::DoublyLinkedList, data)
 
 Create a `ListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
-the provided `data`, a link `prev` to the preceding node, and a link `next` to the following node.
+the provided `data`, but it has no specific insertion point into `list` (see [`insertnode!`](@ref)). # On first read I wondered if it was added to the end of the list?
+
+# The former documentation was a blend between documenting the type and constructor. I do that too.
+# However, it makes sense to prioritize clarity about the constructor, since that's what you're actually documenting here.
+# I added the next item in an attempt to recover some of the lost information from above, but I'm not sure it's a great idea
+# especially if you discourage people from manipulating the fields.
+`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list.
 """
 mutable struct ListNode{T,L<:AbstractDoublyLinkedList{T}} <: AbstractListNode{T,L}
     list::L
     data::T
     prev::ListNode{T,L}
     next::ListNode{T,L}
+    # Is this method really needed? (Is there ever a reason to make a node that doesn't have `data`?)
+    # For any optional field Julia will internally check whether it's defined before returning the value to you,
+    # which results in a (small) performance hit. If you never use it, then it might be better to delete
+    # it and then Julia will know that the first two fields are always defined.
     function ListNode{T,L}(list::L) where {T,L<:AbstractDoublyLinkedList{T}}
         node = new{T,L}(list)
         node.next = node
@@ -34,7 +44,8 @@ end
 
 Create a `PairedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
 the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and double-link `partner` to another
-`PairedListNode`.
+`PairedListNode`.  # some of the same issues arise here as for the constructor above, but I won't separately edit or comment since there
+# may still be some decisions to make
 
 A node's `partner` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `partner`
 of its parent `list`.
@@ -73,7 +84,7 @@ end
 
 Create a `TargetListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
 the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and link `partner` to another
-list node.
+list node. # The distinction between a PairedListNode and a TargetlistNode is not entirely clear
 
 A node's `partner` may be undefined or a node belonging to the `partner` of its parent `list`.
 """
@@ -120,9 +131,9 @@ The first "real" node of a list  `l` can be accessed with `l.head.next`. Similar
 be accessed with `l.tail.prev`.
 """
 mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
-    len::Int
-    head::ListNode{T,DoublyLinkedList{T}}
-    tail::ListNode{T,DoublyLinkedList{T}}
+    len::Int   # is this something you need? You can believe it only if the official API is used, which is OK, but even better might be to not have it if it's not necessary
+    head::ListNode{T,DoublyLinkedList{T}}  # of course deleting it makes `length(l)` an `O(N)` operation, but usually that's what you expect for a linked list
+    tail::ListNode{T,DoublyLinkedList{T}}  # Julia has the [`IteratorSize` trait](https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration) if you need to mark it as absent or slow
     function DoublyLinkedList{T}() where T
         l = new{T}(0)
         l.head = ListNode{T,DoublyLinkedList{T}}(l)
@@ -228,7 +239,7 @@ end
     t = nodetype(::AbstractLinkedList)
     t = nodetype(::Type{<:AbstractLinkedList})
 
-Return the type of the nodes contained in the list.
+Return the type of the nodes contained in the list. # good idea, kudos for defining this
 """
 nodetype(::Type{<:AbstractDoublyLinkedList{T}}) where T = ListNode{T,DoublyLinkedList{T}}
 nodetype(::Type{<:AbstractPairedLinkedList{T}}) where T = PairedListNode{T,PairedLinkedList{T}}
@@ -240,7 +251,7 @@ nodetype(l::AbstractLinkedList) = nodetype(typeof(l))
     node = newnode(list, data)
 
 Create an list node containing `data` of the appropriate type for the provided `list`.
-(e.g. a `ListNode` is created for a `DoublyLinkedList`).
+(e.g. a `ListNode` is created for a `DoublyLinkedList`). `node` is disconnected from `list`.
 """
 newnode(l::AbstractLinkedList, data) = nodetype(l)(l, data)
 
@@ -280,8 +291,9 @@ Base.iterate(iter::IteratingListData{T}, node::AbstractListNode{T,L}) where {L,T
 
 Base.isempty(l::AbstractLinkedList) = l.len == 0
 Base.length(l::AbstractLinkedList) = l.len
-Base.collect(l::AbstractLinkedList{T}) where T = T[x for x in l]
+Base.collect(l::AbstractLinkedList{T}) where T = T[x for x in l]  # suspect you don't need this if you have `eltype` and `IteratorSize` defined appropriately
 Base.eltype(::Type{<:AbstractLinkedList{T}}) where T = T
+# Likewise I suspect that indexing operations may not be needed? This applies to `getnode` and `getindex` further below too.
 Base.lastindex(l::AbstractLinkedList) = l.len
 Base.keys(l::AbstractLinkedList) = LinearIndices(1:l.len)
 
@@ -295,9 +307,12 @@ function Base.last(l::AbstractLinkedList)
     return l.tail.prev.data
 end
 
-Base.:(==)(n1::AbstractListNode, n2::AbstractListNode) = n1.data == n2.data
+Base.:(==)(n1::AbstractListNode, n2::AbstractListNode) = n1.data == n2.data # I am not sure this is correct, since elsewhere you distinguish between nodes and data
+# for a list with data [1, 2, 3, 2, 4], are the two nodes holding `2` really the same?
+# You might want to compare just the data when asking whether two AbstractLinkedLists are the same, but I'm not sure
+# you should do that when asking if two nodes are the same.
 
-Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{S}) where {T,S} = false
+Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{S}) where {T,S} = false # might be OK. But Any[1, 2] == [1, 2] so not sure
 
 function Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{T}) where T
     length(l1) == length(l2) || return false
@@ -330,6 +345,10 @@ function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
     end
 end
 
+# These next ones are very nice! But I wonder if some would come automatically if you have the needed traits/supporting
+# methods defined?
+# If you have tests for these methods you could try commenting them out and seeing whether the tests fail without
+# these definitions.
 function Base.filter(f::Function, l::L) where L <: AbstractLinkedList
     l2 = L()
     for h in l
@@ -448,7 +467,7 @@ function deletenode!(node::PairedListNode)
 end
 
 """
-    insertnode!(node, prev)`
+    insertnode!(node, prev)`  # maybe call this `insert_after!`? We might consider also having `insert_before!`
 
 Insert `node` into a list after the preceding node `prev`, update the list's length, and return the node.
 
@@ -468,6 +487,7 @@ function insertnode!(node::AbstractListNode{T,L}, prev::AbstractListNode{T,L}) w
     return node
 end
 
+# Also maybe not needed since they imply indexability?
 function Base.delete!(l::AbstractLinkedList, idx::Int)
     @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = getnode(l, idx)
@@ -715,7 +735,7 @@ function removepartner!(l::Union{PairedLinkedList,TargetedLinkedList}, idx::Int)
     return removepartner!(node)
 end
 
-
+# Very nice touch!
 function Base.show(io::IO, node::AbstractListNode)
     x = node.data
     print(io, "$(typeof(node))($x)")
