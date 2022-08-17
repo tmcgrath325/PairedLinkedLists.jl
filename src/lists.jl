@@ -209,8 +209,8 @@ Create a `TargetLinkedList` with nodes containing data of a specified type.
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
 `tail` at the end of the list. The list also contains a reference to its "partner" list.
 
-The first "real" node of a list  `l` can be accessed with `l.head.next`. Similarly, the last "real" node can
-be accessed with `l.tail.prev`.
+The first "real" node of a list  `l` can be accessed with `l.head.next` or `head(l)`. 
+Similarly, the last "real" node can be accessed with `l.tail.prev` or `tail(l)`.
 """
 mutable struct TargetedLinkedList{T,L<:AbstractLinkedList{T},N<:AbstractListNode{T,L}} <: AbstractTargetedLinkedList{T,L,N}
     len::Int
@@ -245,6 +245,29 @@ function TargetedLinkedList{T,L,N}(elts...) where {T,L,N}
     return l
 end
 
+
+function Base.first(l::AbstractLinkedList)
+    isempty(l) && throw(ArgumentError("List is empty"))
+    return l.head.next.data
+end
+
+function Base.last(l::AbstractLinkedList)
+    isempty(l) && throw(ArgumentError("List is empty"))
+    return l.tail.prev.data
+end
+
+"""
+    node = head(list)
+
+Returns the first "real" node in the list. Note that this is *not* the same as `list.head`, which is a "dummy" node.
+"""
+head(l::AbstractLinkedList) = l.len < 1 ? throw(ArgumentError("List must be non-empty")) : l.head.next
+"""
+    node = head(list)
+
+Returns the last "real" node in the list. Note that this is *not* the same as `list.tail`, which is a "dummy" node.
+"""
+tail(l::AbstractLinkedList) = l.len < 1 ? throw(ArgumentError("List must be non-empty")) : l.tail.prev
 
 """
     t = nodetype(::AbstractLinkedList)
@@ -281,10 +304,9 @@ struct IteratingListNodes{S<:AbstractListNode}
     end
 end
 IteratingListNodes(l::AbstractLinkedList; rev::Bool = false) = IteratingListNodes(rev ? l.tail.prev : l.head.next; rev = rev)
-Base.iterate(node::AbstractListNode) = iterate(node, node)
 Base.iterate(iter::IteratingListNodes) = iterate(iter, iter.start)
 Base.iterate(iter::IteratingListNodes{S}, node::S) where S = iter.rev ? (at_head(node) ? nothing : (node, node.prev)) : (at_tail(node) ? nothing : (node, node.next))
-Base.IteratorSize(::IteratingListNodes) = SizeUnknown()
+Base.IteratorSize(::IteratingListNodes) = Base.SizeUnknown()
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractLinkedList) = iterate(l, l.head.next)
@@ -299,7 +321,7 @@ end
 IteratingListData(l::AbstractLinkedList{T}; rev::Bool = false) where T = IteratingListData(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(iter::IteratingListData) = iterate(iter, iter.start)
 Base.iterate(iter::IteratingListData{S}, node::S) where S =  iter.rev ? (at_head(node) ? nothing : (node.data, node.prev)) : (at_tail(node) ? nothing : (node.data, node.next))
-Base.IteratorSize(::IteratingListData) = SizeUnknown()
+Base.IteratorSize(::IteratingListData) = Base.SizeUnknown()
 
 Base.isempty(l::AbstractLinkedList) = l.len == 0
 Base.length(l::AbstractLinkedList) = l.len
@@ -307,27 +329,13 @@ Base.eltype(::Type{<:AbstractLinkedList{T}}) where T = T
 Base.lastindex(l::AbstractLinkedList) = l.len
 Base.keys(l::AbstractLinkedList) = LinearIndices(1:l.len)
 
-function Base.first(l::AbstractLinkedList)
-    isempty(l) && throw(ArgumentError("List is empty"))
-    return l.head.next.data
-end
-
-function Base.last(l::AbstractLinkedList)
-    isempty(l) && throw(ArgumentError("List is empty"))
-    return l.tail.prev.data
-end
-
-Base.:(==)(n1::AbstractListNode, n2::AbstractListNode) = n1.data == n2.data # I am not sure this is correct, since elsewhere you distinguish between nodes and data
-# for a list with data [1, 2, 3, 2, 4], are the two nodes holding `2` really the same?
-# You might want to compare just the data when asking whether two AbstractLinkedLists are the same, but I'm not sure
-# you should do that when asking if two nodes are the same.
-
-Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{S}) where {T,S} = false # might be OK. But Any[1, 2] == [1, 2] so not sure
+Base.:(==)(n1::AbstractListNode, n2::AbstractListNode) = (haspartner(n1) || haspartner(n2) ? haspartner(n1) && haspartner(n2) && n1.partner.data == n2.partner.data : true) && n1.data == n2.data 
+Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{S}) where {T,S} = false
 
 function Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{T}) where T
     length(l1) == length(l2) || return false
-    for (i, j) in zip(l1, l2)
-        i == j|| return false
+    for (i, j) in zip(IteratingListNodes(l1), IteratingListNodes(l2))
+        i == j || return false
     end
     return true
 end
@@ -355,42 +363,74 @@ function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
     end
 end
 
-# These next ones are very nice! But I wonder if some would come automatically if you have the needed traits/supporting
-# methods defined?
-# If you have tests for these methods you could try commenting them out and seeing whether the tests fail without
-# these definitions.
-function Base.filter(f::Function, l::L) where L <: AbstractLinkedList
+function Base.filter!(f::Function, l::L) where L <: AbstractLinkedList
+    for n in IteratingListNodes(l)
+        if !f(n.data)
+            deletenode!(n)
+        end
+    end
+    return l
+end
+Base.filter(f::Function, l::AbstractLinkedList) = return filter!(f, copy(l))
+
+function Base.reverse!(l::L) where L <: AbstractLinkedList
+    prevprevnode = l.tail
+    prevnode = l.tail
+    oldtail = tail(l)
+    for (i,n) in enumerate(IteratingListNodes(l))
+        prevnode.prev = n
+        if i>1
+            prevnode.next = prevprevnode
+        end
+        prevprevnode = prevnode
+        prevnode = n
+    end
+    prevnode.prev = oldtail
+    prevnode.next = prevprevnode
+    oldtail.prev = l.head
+    l.head.next = oldtail
+    return l
+end
+Base.reverse(l::AbstractLinkedList) = return reverse!(copy(l))
+
+function Base.copy(l::L) where L <: Union{DoublyLinkedList, TargetedLinkedList}
     l2 = L()
-    for h in l
-        if f(h)
-            push!(l2, h)
+    haspartner(l) && addpartner(l2, l.partner)
+    for n in IteratingListNodes(l)
+        push!(l2, n.data)
+        haspartner(n) && addpartner(tail(l2), n.partner)
+    end
+    return l2
+end
+
+function Base.copy(l::L) where L <: PairedLinkedList
+    l2 = L()
+    partner2 = L()
+    addpartner!(l2, partner2)
+    partnermap = Tuple{Int,nodetype(L)}[]
+
+    for (i,n) in enumerate(IteratingListNodes(l))
+        push!(l2, n.data)
+        haspartner(n) && push!(partnermap, (i,n.partner))
+    end
+    for n in IteratingListNodes(l.partner)
+        push!(partner2, n.data)
+        if haspartner(n)
+            partneridx = getfirst(x->n===x[2], partnermap)[1]
+            addpartner!(getnode(l2, partneridx), tail(partner2))
         end
     end
     return l2
 end
 
-function Base.reverse(l::L) where L <: AbstractLinkedList
-    l2 = L()
-    for h in l
-        pushfirst!(l2, h)
-    end
-    return l2
-end
-
-function Base.copy(l::L) where L <: AbstractLinkedList
-    l2 = L()
-    for h in l
-        push!(l2, h)
-    end
-    return l2
-end
-
 function Base.empty!(l::AbstractLinkedList)
-    removepair!(l)
+    haspartner(l) && removepartner!(l)
     l.head.next = l.tail
     l.tail.prev = l.head
+    l.len = 0
     return l
 end
+Base.empty(l::AbstractLinkedList) = empty!(copy(l))
 
 """
     node = getnode(l::AbstractLinkedList, index)
@@ -440,8 +480,8 @@ function Base.append!(l1::L, l2::L) where L <: AbstractLinkedList
     for node in IteratingListNodes(l2)
         node.list = l1
     end
-    l1.tail.prev.next = l2.head.next 
-    l2.tail.prev.next = l1.tail
+    tail(l1).next = head(l2)
+    tail(l2).next = l1.tail
     l1.len += length(l2)
     return l1
 end
@@ -497,7 +537,6 @@ function insertnode!(node::AbstractListNode{T,L}, prev::AbstractListNode{T,L}) w
     return node
 end
 
-# Also maybe not needed since they imply indexability?
 function Base.delete!(l::AbstractLinkedList, idx::Int)
     @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = getnode(l, idx)
@@ -535,7 +574,7 @@ end
 
 function Base.pop!(l::AbstractLinkedList)
     isempty(l) && throw(ArgumentError("List must be non-empty"))
-    node = l.tail.prev
+    node = tail(l)
     data = node.data
     deletenode!(node)
     return data
@@ -543,7 +582,7 @@ end
 
 function Base.popfirst!(l::AbstractLinkedList)
     isempty(l) && throw(ArgumentError("List must be non-empty"))
-    node = l.head.next
+    node = head(l)
     data = node.data
     deletenode!(node)
     return data
@@ -655,41 +694,43 @@ If the first object is a `PairedListNode' or a 'PairedLinkedList' and either obj
 If the first object is a `TargetedListNode` or a `TargetedLinkedList`, the second object remains unchanged.
 """
 function addpartner!(list::PairedLinkedList{T}, partner::PairedLinkedList{T}) where T
-    # remove existing partners
-    if haspartner(list)
+    if haspartner(list)     # remove existing partners
         removepartner!(list)
     end
     if haspartner(partner)
         removepartner!(partner)
     end
-
     list.partner = partner
     partner.partner = list
     return list
 end
 
 function addpartner!(node::PairedListNode{T,L}, partner::PairedListNode{T,L}) where {T,L}
-    node.list.partner === partner.list || throw(ArgumentError("The provided nodes must belong to paired lists."))
-    # remove existing partners
-    if haspartner(node)
+    node.list.partner === partner.list || throw(ArgumentError("The provided node must belong to paired list."))
+    if haspartner(node)     # remove existing partners
         removepartner!(node)
     end
     if haspartner(partner)
         removepartner!(partner)
     end
-
     node.partner = partner
     partner.partner = node
     return node
 end
 
 function addpartner!(list::TargetedLinkedList{T,L}, partner::L) where {T,L}
+    if haspartner(list)    # remove an existing partner
+        removepartner!(list)
+    end
     list.partner = partner
     return list
 end
 
 function addpartner!(node::TargetedListNode{T,L,N}, partner::N) where {T,L,N}
-    node.list.partner === partner.list || throw(ArgumentError("The provided nodes must belong to paired lists."))
+    node.list.partner === partner.list || throw(ArgumentError("The provided node must belong to the list being targeted."))
+    if haspartner(node)    # remove an existing partner
+        removepartner!(node)
+    end
     node.partner = partner
     return node
 end
@@ -739,13 +780,14 @@ function removepartner!(list::TargetedLinkedList)
     end
     return list
 end
+removepartner!(list::DoublyLinkedList) = list;
+
 
 function removepartner!(l::Union{PairedLinkedList,TargetedLinkedList}, idx::Int)
     node = getnode(l, idx)
     return removepartner!(node)
 end
 
-# Very nice touch!
 function Base.show(io::IO, node::AbstractListNode)
     x = node.data
     print(io, "$(typeof(node))($x)")

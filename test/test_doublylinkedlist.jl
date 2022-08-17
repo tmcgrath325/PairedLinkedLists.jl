@@ -7,11 +7,14 @@
         @test isempty(l1)
         @test length(l1) == 0
         @test lastindex(l1) == 0
+        @test keys(l1) == []
         @test collect(l1) == Int[]
         @test eltype(l1) == Int
         @test eltype(typeof(l1)) == Int
         @test_throws ArgumentError pop!(l1)
         @test_throws ArgumentError popfirst!(l1)
+        @test_throws ArgumentError head(l1)
+        @test_throws ArgumentError tail(l1)
     end
 
     @testset "core functionality" begin
@@ -77,6 +80,7 @@
                     @test lastindex(l) == i
                     @test length(l) == i
                     @test isempty(l) == false
+                    @test keys(l) == collect(1:i)
                     for (j, k) in enumerate(l)
                         @test j == k
                     end
@@ -290,6 +294,17 @@
                 @test l == DoublyLinkedList{Int}(0)
                 @test l.len == 1
             end
+        end
+
+        @testset "empty" begin
+            l = DoublyLinkedList{Int}(1:n...)
+            @test length(l) == n
+            emptyl = empty(l)
+            @test length(emptyl) == 0
+            @test typeof(l) == typeof(emptyl)
+            @test length(l) == n
+            empty!(l)
+            @test l == emptyl
         end
     end
 

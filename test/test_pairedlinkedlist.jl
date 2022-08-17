@@ -7,15 +7,25 @@
         @test isempty(l1)
         @test length(l1) == 0
         @test lastindex(l1) == 0
+        @test keys(l1) == []
         @test collect(l1) == Int[]
         @test eltype(l1) == Int
         @test eltype(typeof(l1)) == Int
         @test_throws ArgumentError pop!(l1)
         @test_throws ArgumentError popfirst!(l1)
+        @test_throws ArgumentError head(l1)
+        @test_throws ArgumentError tail(l1)
     end
 
     @testset "core functionality" begin
         n = 10
+
+        @testset "equality" begin
+            l1 = PairedLinkedList{Int}(1:n...)
+            l2 = PairedLinkedList{Int}(1:n...)
+            l3 = DoublyLinkedList{Int}(1:n...)    
+            @test l1 == l2 !== l3
+        end
 
         @testset "iterate" begin
             l = PairedLinkedList{Int}(1:n...)
@@ -30,16 +40,16 @@
                 for (i,data) in enumerate(IteratingListData(l; rev=true))
                     @test data == n-i+1
                 end
-                for (i,data) in enumerate(IteratingListData(l.head.next.next))
+                for (i,data) in enumerate(IteratingListData(head(l).next))
                     @test data == i+1
                 end
-                for (i,data) in enumerate(IteratingListData(l.tail.prev.prev; rev=true))
+                for (i,data) in enumerate(IteratingListData(tail(l).prev; rev=true))
                     @test data == n-i
                 end
             end
 
             @testset "nodes" begin
-                for (i,node) in enumerate(l.head.next)
+                for (i,node) in enumerate(head(l))
                     @test node == newnode(l,i)
                 end
                 for (i,node) in enumerate(IteratingListNodes(l))
@@ -48,10 +58,10 @@
                 for (i,node) in enumerate(IteratingListNodes(l; rev=true))
                     @test node == newnode(l,n-i+1)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l.head.next.next))
+                for (i,node) in enumerate(IteratingListNodes(head(l).next))
                     @test node == newnode(l,i+1)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l.tail.prev.prev; rev=true))
+                for (i,node) in enumerate(IteratingListNodes(tail(l).prev; rev=true))
                     @test node == newnode(l,n-i)
                 end
             end
@@ -77,6 +87,7 @@
                     @test lastindex(l) == i
                     @test length(l) == i
                     @test isempty(l) == false
+                    @test keys(l) == collect(1:i)
                     for (j, k) in enumerate(l)
                         @test j == k
                     end
@@ -165,13 +176,41 @@
                 end
 
                 @testset "copy" begin
-                    l2 = copy(l)
-                    @test l == l2
+                    l2 = PairedLinkedList{Int}(1:n...)
+                    l3 = PairedLinkedList{Int}(1:n...)
+                    addpartner!(l2,l3)
+                    for (n2,n3) in zip(IteratingListNodes(l2), IteratingListNodes(l3; rev=true))
+                        addpartner!(n2, n3)
+                    end
+                    l4 = copy(l2)
+                    @test l4 == l2
+                    @test [x.partner.data for x in IteratingListNodes(l4)] == [x.partner.data for x in IteratingListNodes(l2)]
                 end
 
                 @testset "reverse" begin
                     l2 = PairedLinkedList{Int}(n:-1:1...)
                     @test l == reverse(l2)
+                end
+            end
+        end
+
+        @testset "filter" begin
+            for i = 1:n
+                @testset "filter" begin
+                    l = PairedLinkedList{Int}(1:n...)
+                    @test filter(x -> x % 2 == 0, l) == PairedLinkedList{Int}(2:2:n...)
+                end
+
+                @testset "show" begin
+                    l = PairedLinkedList{Int32}(1:n...)
+                    io = IOBuffer()
+                    @test sprint(io -> show(io, head(l))) == "$(typeof(head(l)))($(head(l).data))"
+                    io1 = IOBuffer()
+                    write(io1, "PairedLinkedList{Int32}(");
+                    write(io1, join(l, ", "));
+                    write(io1, ")")
+                    seekstart(io1)
+                    @test sprint(io -> show(io, l)) == read(io1, String)
                 end
             end
         end
@@ -266,13 +305,31 @@
             end
         end
 
+        @testset "empty" begin
+            l = PairedLinkedList{Int}(1:n...)
+            @test length(l) == n
+            emptyl = empty(l)
+            @test length(emptyl) == 0
+            @test typeof(l) == typeof(emptyl)
+            @test length(l) == n
+            empty!(l)
+            @test l == emptyl
+        end
+
         @testset "partners" begin
             l1 = PairedLinkedList{Int}(1:n...)  
             l2 = PairedLinkedList{Int}(1:n...)
+            l3 = PairedLinkedList{Int}(1:n...)
+            l4 = PairedLinkedList{Int}(l3)
+            dl = DoublyLinkedList{Int}(1:n...)
             @test_throws ArgumentError addpartner!(newnode(l1, 1), newnode(l2, 1))
             addpartner!(l1, l2)
+            push!(l4, 1:10...)
+            @test !haspartner(l3)
+            @test l4.partner === l3
+            addpartner!(l3, l4)
 
-            @testset "add" begin
+            @testset "add node partners" begin
                 for i=1:n
                     node1 = getnode(l1, 1)
                     node2 = getnode(l2, i)
@@ -313,15 +370,51 @@
                     end
                     @test circshift(partnersdata1, shift) == circshift(partnersdata2, -shift) == [1:n...]
                 end
+
+                @test_throws MethodError addpartner!(head(l1), head(dl))
             end
 
-            @testset "remove" begin
-                for i=1:n
+            @testset "remove node partners" begin
+                mid = Int(floor(n/2))
+                for i=1:mid
                     node = getnode(l1, i)
                     partner = node.partner
                     removepartner!(node)
                     @test node.partner === node
                     @test partner.partner === partner
+                    removepartner!(getnode(dl, i))
+                end
+                for i=mid:n
+                    node = getnode(l1, i)
+                    partner = node.partner
+                    removepartner!(l1, i)
+                    @test node.partner === node
+                    @test partner.partner === partner
+                    removepartner!(getnode(dl, i))
+                end
+            end
+
+            @testset "add list partners" begin
+                @test_throws MethodError addpartner!(l1, dl)
+                for (n3, n4) in zip(IteratingListNodes(l3), IteratingListNodes(l4))
+                    addpartner!(n3,n4)
+                end
+                addpartner!(l1,l3)
+                @test l1.partner === l3 && l3.partner === l1
+                @test !haspartner(l2) && !haspartner(l4)
+                for (n2, n4) in zip(IteratingListNodes(l2), IteratingListNodes(l4))
+                    @test !haspartner(n2) && !haspartner(n4)
+                end
+            end
+
+            @testset "remove list partners" begin
+                for (n1, n3) in zip(IteratingListNodes(l1), IteratingListNodes(l3))
+                    addpartner!(n1,n3)
+                end
+                removepartner!(l1)
+                @test !haspartner(l1) && !haspartner(l3)
+                for (n1, n3) in zip(IteratingListNodes(l2), IteratingListNodes(l4))
+                    @test !haspartner(n1) && !haspartner(n3)
                 end
             end
         end

@@ -6,11 +6,14 @@
         @test isempty(l1)
         @test length(l1) == 0
         @test lastindex(l1) == 0
+        @test keys(l1) == []
         @test collect(l1) == Int[]
         @test eltype(l1) == Int
         @test eltype(typeof(l1)) == Int
         @test_throws ArgumentError pop!(l1)
         @test_throws ArgumentError popfirst!(l1)
+        @test_throws ArgumentError head(l1)
+        @test_throws ArgumentError tail(l1)
     end
 
     @testset "core functionality" begin
@@ -76,6 +79,7 @@
                     @test lastindex(l) == i
                     @test length(l) == i
                     @test isempty(l) == false
+                    @test keys(l) == collect(1:i)
                     for (j, k) in enumerate(l)
                         @test j == k
                     end
@@ -264,16 +268,40 @@
             end
         end
 
+        @testset "empty" begin
+            l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+            @test length(l) == n
+            emptyl = empty(l)
+            @test length(emptyl) == 0
+            @test typeof(l) == typeof(emptyl)
+            @test length(l) == n
+            empty!(l)
+            @test l == emptyl
+        end
+
         @testset "partners" begin
-            l0 = DoublyLinkedList{Int}(1:n...)
-            l1 = TargetedLinkedList(l0)  
+            dl1 = DoublyLinkedList{Int}(1:n...)
+            dl2 = DoublyLinkedList{Int}(1:n...)
+            pl1 = PairedLinkedList{Int}(1:n...)
+            pl2 = PairedLinkedList{Int}(1:n...)
+            addpartner!(pl1, pl2)
+            for (n1,n2) in zip(IteratingListNodes(pl1), IteratingListNodes(pl2))
+                addpartner!(n1, n2)
+            end
+            l1 = TargetedLinkedList(dl1)  
             push!(l1, 1:n...)
             l2 = TargetedLinkedList(l1)
             push!(l2, 1:n...)
-            @test_throws MethodError addpartner!(newnode(l1, 1), newnode(l2, 1))
-            @test_throws MethodError addpartner!(newnode(l2, 1), newnode(l0, 1))
+            l3 = TargetedLinkedList(pl1)
+            push!(l3, 1:n...)
 
-            @testset "add" begin
+            @testset "add node partners" begin
+                @test_throws MethodError addpartner!(newnode(l1, 1), newnode(l2, 1))
+                @test_throws ArgumentError addpartner!(newnode(l1, 1), newnode(dl2, 1))
+                @test_throws MethodError addpartner!(newnode(l2, 1), newnode(pl1, 1))
+                @test_throws MethodError addpartner!(newnode(l2, 1), newnode(dl1, 1))
+                @test_throws MethodError addpartner!(newnode(l2, 1), newnode(dl2, 1))
+                @test_throws ArgumentError addpartner!(newnode(l3, 1), newnode(pl2, 1))
                 for i=1:n
                     node1 = getnode(l1, i)
                     node2 = getnode(l2, 1)
@@ -284,7 +312,7 @@
                 end
 
                 for i=1:n
-                    node0 = getnode(l0, i)
+                    node0 = getnode(dl1, i)
                     node1 = getnode(l1, i)
                     node2 = getnode(l2, n-i+1)
                     addpartner!(node1, node0)
@@ -300,13 +328,66 @@
                 @test partnersdata2 == [n:-1:1...]
             end
 
-            @testset "remove" begin
+            @testset "remove node partners" begin
                 for i=1:n
                     node = getnode(l2, i)
                     partner = node.partner
                     removepartner!(node)
                     @test node.partner === node
-                    @test partner.partner === getnode(l0, n-i+1)
+                    @test partner.partner === getnode(dl1, n-i+1)
+                end
+            end
+
+            @testset "add list partners" begin
+                @test_throws MethodError addpartner!(l1, l2)
+                @test_throws MethodError addpartner!(l1, pl1)
+                @test_throws MethodError addpartner!(l2, dl1)
+                @test_throws MethodError addpartner!(l2, pl1)
+                for (nt1, nt2, nd1) in zip(IteratingListNodes(l1), IteratingListNodes(l2), IteratingListNodes(dl1))
+                    addpartner!(nt1,nd1)
+                    addpartner!(nt2,nt1)
+                end
+                addpartner!(l1,dl2)
+                @test l1.partner == dl2
+                for (n1, n2) in zip(head(l1), head(l2))
+                    @test !haspartner(n1)
+                    @test n2.partner == n1
+                end
+                for (nt3, np1) in zip(IteratingListNodes(l3), IteratingListNodes(pl1))
+                    addpartner!(nt3,np1)
+                end
+                addpartner!(l3, pl2)
+                @test l3.partner == pl2
+                for (nt3, np1, np2) in zip(head(l3), head(pl1), head(pl2))
+                    @test !haspartner(nt3)
+                    @test np2.partner == np1
+                end
+            end
+
+            @testset "remove list partners" begin
+                for (nt1,nd2) in zip(IteratingListNodes(l1), IteratingListNodes(dl2))
+                    addpartner!(nt1,nd2)
+                end
+                removepartner!(l1)
+                @test !haspartner(l1)
+                @test l2.partner === l1
+                for n in IteratingListNodes(l1)
+                    @test !haspartner(n)
+                end
+                removepartner!(l2)
+                @test !haspartner(l2)
+                for n in IteratingListNodes(l2)
+                    @test !haspartner(n)
+                end
+                for (nt3, np2) in zip(IteratingListNodes(l3), IteratingListNodes(pl2))
+                    addpartner!(nt3,np2)
+                end
+                removepartner!(l3)
+                @test !haspartner(l3)
+                @test pl2.partner == pl1
+                for (nt3,np2) in zip(IteratingListNodes(l3), IteratingListNodes(pl2))
+                    @test !haspartner(nt3)
+                    @test haspartner(np2)
                 end
             end
         end

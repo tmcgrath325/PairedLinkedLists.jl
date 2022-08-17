@@ -30,10 +30,11 @@ export popat!
 export AbstractListNode, ListNode, PairedListNode, TargetedListNode
 export AbstractLinkedList, DoublyLinkedList, PairedLinkedList, TargetedLinkedList
 export IteratingListNodes, IteratingListData
-export iteratenodes, getnode, newnode, deletenode!, insertnode!
+export head, tail, iteratenodes, getnode, newnode, deletenode!, insertnode!
 export haspartner, addpartner!, removepartner!
+export getfirst
 
-
+include("utils.jl")
 include("lists.jl")
 
 end
