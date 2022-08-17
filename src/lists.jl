@@ -8,12 +8,8 @@ abstract type AbstractTargetedLinkedList{T,L,N} <: AbstractPairedLinkedList{T} e
     node = ListNode(list::DoublyLinkedList, data)
 
 Create a `ListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
-the provided `data`, but it has no specific insertion point into `list` (see [`insertnode!`](@ref)). # On first read I wondered if it was added to the end of the list?
+the provided `data`, but it has no specific insertion point into `list` (see [`insertnode!`](@ref)).
 
-# The former documentation was a blend between documenting the type and constructor. I do that too.
-# However, it makes sense to prioritize clarity about the constructor, since that's what you're actually documenting here.
-# I added the next item in an attempt to recover some of the lost information from above, but I'm not sure it's a great idea
-# especially if you discourage people from manipulating the fields.
 `node.prev` and `node.next` represent the previous and next nodes, respectively, of a list.
 """
 mutable struct ListNode{T,L<:AbstractDoublyLinkedList{T}} <: AbstractListNode{T,L}
