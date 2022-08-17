@@ -21,10 +21,6 @@ mutable struct ListNode{T,L<:AbstractDoublyLinkedList{T}} <: AbstractListNode{T,
     data::T
     prev::ListNode{T,L}
     next::ListNode{T,L}
-    # Is this method really needed? (Is there ever a reason to make a node that doesn't have `data`?)
-    # For any optional field Julia will internally check whether it's defined before returning the value to you,
-    # which results in a (small) performance hit. If you never use it, then it might be better to delete
-    # it and then Julia will know that the first two fields are always defined.
     function ListNode{T,L}(list::L) where {T,L<:AbstractDoublyLinkedList{T}}
         node = new{T,L}(list)
         node.next = node
@@ -44,11 +40,12 @@ end
 
 Create a `PairedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
 the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and double-link `partner` to another
-`PairedListNode`.  # some of the same issues arise here as for the constructor above, but I won't separately edit or comment since there
-# may still be some decisions to make
+`PairedListNode`.
 
 A node's `partner` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `partner`
 of its parent `list`.
+
+The `partner` link is assumed to be reciprocated for a `PairedListNode`. For example, `node === node.partner.partner` should be `true`.
 """
 mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractListNode{T,L}
     list::L
@@ -84,9 +81,12 @@ end
 
 Create a `TargetListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
 the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and link `partner` to another
-list node. # The distinction between a PairedListNode and a TargetlistNode is not entirely clear
+list node. 
 
-A node's `partner` may be undefined or a node belonging to the `partner` of its parent `list`.
+A node's `partner` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `partner`
+of its parent `list`.
+
+Unlike a `PairedListNode`, the `partner` link for a `TargetListNode` is not assumed to be reciprocated.
 """
 mutable struct TargetedListNode{T,L<:AbstractLinkedList{T},N<:AbstractListNode{T,L},P<:AbstractTargetedLinkedList{T,L,N}} <: AbstractListNode{T,P}
     list::P
@@ -200,6 +200,17 @@ function PairedLinkedList{T}(elts...) where T
 end
 
 """
+    l = TargetLinkedList{T,L,N}()
+    l = TargetLinkedList{T,L,N}(elts...)
+    l = TargetLinkedList(list)
+
+Create a `TargetLinkedList` with nodes containing data of a specified type. 
+
+The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
+`tail` at the end of the list. The list also contains a reference to its "partner" list.
+
+The first "real" node of a list  `l` can be accessed with `l.head.next`. Similarly, the last "real" node can
+be accessed with `l.tail.prev`.
 """
 mutable struct TargetedLinkedList{T,L<:AbstractLinkedList{T},N<:AbstractListNode{T,L}} <: AbstractTargetedLinkedList{T,L,N}
     len::Int
@@ -239,7 +250,7 @@ end
     t = nodetype(::AbstractLinkedList)
     t = nodetype(::Type{<:AbstractLinkedList})
 
-Return the type of the nodes contained in the list. # good idea, kudos for defining this
+Return the type of the nodes contained in the list.
 """
 nodetype(::Type{<:AbstractDoublyLinkedList{T}}) where T = ListNode{T,DoublyLinkedList{T}}
 nodetype(::Type{<:AbstractPairedLinkedList{T}}) where T = PairedListNode{T,PairedLinkedList{T}}
@@ -262,38 +273,37 @@ at_tail(node::AbstractListNode) = node === node.next
 # Iterating with a node returns the nodes themselves, and terminates at a list's tail
 Base.iterate(node::AbstractListNode) = iterate(node, node)
 Base.iterate(::AbstractListNode, node::AbstractListNode) = at_tail(node) ? nothing : (node, node.next)
-struct IteratingListNodes{T,L}
-    start::AbstractListNode{T,L}
+struct IteratingListNodes{S<:AbstractListNode}
+    start::S
     rev::Bool
-    function IteratingListNodes(start::AbstractListNode{T,L}; rev::Bool = false) where {T,L}
-        return new{T,L}(start, rev)
+    function IteratingListNodes(start::S; rev::Bool = false) where S
+        return new{S}(start, rev)
     end
 end
 IteratingListNodes(l::AbstractLinkedList; rev::Bool = false) = IteratingListNodes(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(node::AbstractListNode) = iterate(node, node)
 Base.iterate(iter::IteratingListNodes) = iterate(iter, iter.start)
-Base.iterate(iter::IteratingListNodes{T}, node::AbstractListNode{T,L}) where {T,L} = iter.rev ? (at_head(node) ? nothing : (node, node.prev)) : (at_tail(node) ? nothing : (node, node.next))
+Base.iterate(iter::IteratingListNodes{S}, node::S) where S = iter.rev ? (at_head(node) ? nothing : (node, node.prev)) : (at_tail(node) ? nothing : (node, node.next))
+Base.IteratorSize(::IteratingListNodes) = SizeUnknown()
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractLinkedList) = iterate(l, l.head.next)
 Base.iterate(::AbstractLinkedList, node::AbstractListNode) = at_tail(node) ? nothing : (node.data, node.next)
-struct IteratingListData{T,L}
-    start::AbstractListNode{T,L}
+struct IteratingListData{S<:AbstractListNode}
+    start::S
     rev::Bool
-    function IteratingListData(start::AbstractListNode{T,L}; rev::Bool = false) where {T,L}
-        return new{T,L}(start, rev)
+    function IteratingListData(start::S; rev::Bool = false) where S
+        return new{S}(start, rev)
     end
 end
 IteratingListData(l::AbstractLinkedList{T}; rev::Bool = false) where T = IteratingListData(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(iter::IteratingListData) = iterate(iter, iter.start)
-Base.iterate(iter::IteratingListData{T}, node::AbstractListNode{T,L}) where {L,T} =  iter.rev ? (at_head(node) ? nothing : (node.data, node.prev)) : (at_tail(node) ? nothing : (node.data, node.next))
-
+Base.iterate(iter::IteratingListData{S}, node::S) where S =  iter.rev ? (at_head(node) ? nothing : (node.data, node.prev)) : (at_tail(node) ? nothing : (node.data, node.next))
+Base.IteratorSize(::IteratingListData) = SizeUnknown()
 
 Base.isempty(l::AbstractLinkedList) = l.len == 0
 Base.length(l::AbstractLinkedList) = l.len
-Base.collect(l::AbstractLinkedList{T}) where T = T[x for x in l]  # suspect you don't need this if you have `eltype` and `IteratorSize` defined appropriately
 Base.eltype(::Type{<:AbstractLinkedList{T}}) where T = T
-# Likewise I suspect that indexing operations may not be needed? This applies to `getnode` and `getindex` further below too.
 Base.lastindex(l::AbstractLinkedList) = l.len
 Base.keys(l::AbstractLinkedList) = LinearIndices(1:l.len)
 
