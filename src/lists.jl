@@ -548,6 +548,7 @@ end
 
 # getindex returns the data at the node at that index
 function Base.getindex(l::AbstractLinkedList, idx::Int)
+    @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = getnode(l, idx)
     return node.data
 end
