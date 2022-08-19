@@ -285,13 +285,23 @@ Create an list node containing `data` of the appropriate type for the provided `
 """
 newnode(l::AbstractLinkedList, data) = nodetype(l)(l, data)
 
-# checks to see if the node is the first or last one
-at_head(node::AbstractListNode) = node === node.prev
-at_tail(node::AbstractListNode) = node === node.next
+"""
+    bool = athead(node)
+
+Return true if the node is the "dummy" node at the beginning of the list, and false otherwise.
+"""
+athead(node::AbstractListNode) = node === node.prev
+
+"""
+    bool = attail(node)
+
+Return true if the node is the "dummy" node at the end of the list, and false otherwise.
+"""
+attail(node::AbstractListNode) = node === node.next
 
 # Iterating with a node returns the nodes themselves, and terminates at a list's tail
 Base.iterate(node::AbstractListNode) = iterate(node, node)
-Base.iterate(::AbstractListNode, node::AbstractListNode) = at_tail(node) ? nothing : (node, node.next)
+Base.iterate(::AbstractListNode, node::AbstractListNode) = attail(node) ? nothing : (node, node.next)
 struct IteratingListNodes{S<:AbstractListNode}
     start::S
     rev::Bool
@@ -301,12 +311,12 @@ struct IteratingListNodes{S<:AbstractListNode}
 end
 IteratingListNodes(l::AbstractLinkedList; rev::Bool = false) = IteratingListNodes(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(iter::IteratingListNodes) = iterate(iter, iter.start)
-Base.iterate(iter::IteratingListNodes{S}, node::S) where S = iter.rev ? (at_head(node) ? nothing : (node, node.prev)) : (at_tail(node) ? nothing : (node, node.next))
+Base.iterate(iter::IteratingListNodes{S}, node::S) where S = iter.rev ? (athead(node) ? nothing : (node, node.prev)) : (attail(node) ? nothing : (node, node.next))
 Base.IteratorSize(::IteratingListNodes) = Base.SizeUnknown()
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractLinkedList) = iterate(l, l.head.next)
-Base.iterate(::AbstractLinkedList, node::AbstractListNode) = at_tail(node) ? nothing : (node.data, node.next)
+Base.iterate(::AbstractLinkedList, node::AbstractListNode) = attail(node) ? nothing : (node.data, node.next)
 struct IteratingListData{S<:AbstractListNode}
     start::S
     rev::Bool
@@ -316,7 +326,7 @@ struct IteratingListData{S<:AbstractListNode}
 end
 IteratingListData(l::AbstractLinkedList{T}; rev::Bool = false) where T = IteratingListData(rev ? l.tail.prev : l.head.next; rev = rev)
 Base.iterate(iter::IteratingListData) = iterate(iter, iter.start)
-Base.iterate(iter::IteratingListData{S}, node::S) where S =  iter.rev ? (at_head(node) ? nothing : (node.data, node.prev)) : (at_tail(node) ? nothing : (node.data, node.next))
+Base.iterate(iter::IteratingListData{S}, node::S) where S =  iter.rev ? (athead(node) ? nothing : (node.data, node.prev)) : (attail(node) ? nothing : (node.data, node.next))
 Base.IteratorSize(::IteratingListData) = Base.SizeUnknown()
 
 Base.isempty(l::AbstractLinkedList) = l.len == 0
