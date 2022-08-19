@@ -389,16 +389,79 @@ function Base.reverse!(l::L) where L <: AbstractLinkedList
 end
 Base.reverse(l::AbstractLinkedList) = return reverse!(copy(l))
 
+function Base.copy!(l2::L, l::L) where L <: Union{DoublyLinkedList, TargetedLinkedList}
+    haspartner(l) && addpartner!(l2, l.partner)
+    len = l2.len
+    existingnode = l2.head
+    for (i,n) in enumerate(IteratingListNodes(l))
+        if i<=len
+            existingnode = existingnode.next
+            existingnode.data = n.data
+            haspartner(n) && addpartner!(existingnode, n.partner)
+        else
+            push!(l2, n.data)
+            haspartner(n) && addpartner!(tail(l2), n.partner)
+        end
+    end
+    if l.len < len 
+        existingnode.next = l2.tail
+        l2.tail.prev = existingnode
+        l2.len = l.len
+    end
+    return l2
+end
 function Base.copy(l::L) where L <: Union{DoublyLinkedList, TargetedLinkedList}
     l2 = L()
-    haspartner(l) && addpartner(l2, l.partner)
+    haspartner(l) && addpartner!(l2, l.partner)
     for n in IteratingListNodes(l)
         push!(l2, n.data)
-        haspartner(n) && addpartner(tail(l2), n.partner)
+        haspartner(n) && addpartner!(tail(l2), n.partner)
     end
     return l2
 end
 
+function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
+    !haspartner(l2) && addpartner!(l2, L())
+    partner2 = l2.partner
+    len = l2.len
+    plen = partner2.len
+    partnermap = Tuple{Int,nodetype(L)}[]
+
+    existingnode = l2.head
+    for (i,n) in enumerate(IteratingListNodes(l))
+        if i<=len
+            existingnode = existingnode.next
+            existingnode.data = n.data
+        else
+            push!(l2, n.data)
+        end
+        haspartner(n) && push!(partnermap, (i,n.partner))
+    end
+    if l.len < len 
+        existingnode.next = l2.tail
+        l2.tail.prev = existingnode
+        l2.len = l.len
+    end
+    existingnode = partner2.head
+    for (i,n) in enumerate(IteratingListNodes(l.partner))
+        if i<=plen
+            existingnode = existingnode.next
+            existingnode.data = n.data
+        else
+            push!(partner2, n.data)
+        end
+        if haspartner(n)
+            partneridx = getfirst(x->n===x[2], partnermap)[1]
+            addpartner!(getnode(l2, partneridx), i<=plen ? existingnode : tail(partner2))
+        end
+    end
+    if l.partner.len < plen 
+        existingnode.next = partner2.tail
+        partner2.tail.prev = existingnode
+        partner2.len = l.partner.len
+    end
+    return l2
+end
 function Base.copy(l::L) where L <: PairedLinkedList
     l2 = L()
     partner2 = L()

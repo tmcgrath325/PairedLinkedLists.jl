@@ -167,8 +167,29 @@
                 end
 
                 @testset "copy" begin
-                    l2 = copy(l)
-                    @test l == l2
+                    dl = DoublyLinkedList{Int}(1:n...)
+                    l2 = TargetedLinkedList(dl)
+                    for n in IteratingListNodes(dl)
+                        push!(l2, n.data)
+                        addpartner!(tail(l2), n)
+                    end
+                    l3 = TargetedLinkedList(l2)
+                    for n in IteratingListNodes(l2)
+                        push!(l3, n.data)
+                        addpartner!(tail(l3), n)
+                    end
+                    l4 = copy(l2)
+                    @test l4 == l2
+                    @test [x.partner for x in IteratingListNodes(l4)] == [x.partner for x in IteratingListNodes(l2)]
+                    l5 = typeof(l2)()
+                    copy!(l5, l2)
+                    @test l5 == l2
+                    @test [x.partner for x in IteratingListNodes(l5)] == [x.partner for x in IteratingListNodes(l2)]
+                    l6 = typeof(l3)()
+                    push!(l6, 1:2*i...)
+                    copy!(l6, l3)
+                    @test l6 == l3
+                    @test [x.partner for x in IteratingListNodes(l6)] == [x.partner for x in IteratingListNodes(l3)]
                 end
 
                 @testset "reverse" begin

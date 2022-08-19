@@ -184,7 +184,22 @@
                     end
                     l4 = copy(l2)
                     @test l4 == l2
-                    @test [x.partner.data for x in IteratingListNodes(l4)] == [x.partner.data for x in IteratingListNodes(l2)]
+                    @test [x.partner for x in IteratingListNodes(l4)] == [x.partner for x in IteratingListNodes(l2)]
+                    l5 = PairedLinkedList{Int}()
+                    copy!(l5, l2)
+                    @test l5 == l2
+                    @test l5.partner == l3
+                    @test [x.partner for x in IteratingListNodes(l5)] == [x.partner for x in IteratingListNodes(l2)]
+                    l6 = PairedLinkedList{Int}(1:2*i...)
+                    l7 = PairedLinkedList{Int}(1:2*i...)
+                    addpartner!(l6, l7)
+                    for (n6,n7) in zip(IteratingListNodes(l6), IteratingListNodes(l7; rev=true))
+                        addpartner!(n6, n7)
+                    end
+                    copy!(l6, l2)
+                    @test l6 == l2
+                    @test l7 == l3
+                    @test [x.partner for x in IteratingListNodes(l6)] == [x.partner for x in IteratingListNodes(l2)]
                 end
 
                 @testset "reverse" begin

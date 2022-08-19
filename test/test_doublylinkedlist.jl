@@ -166,6 +166,14 @@
                 @testset "copy" begin
                     l2 = copy(l)
                     @test l == l2
+
+                    l3 = DoublyLinkedList{Int}()
+                    copy!(l3, l)
+                    @test l3 == l
+
+                    l4 = DoublyLinkedList{Int}(1:2*i...)
+                    copy!(l4, l)
+                    @test l4 == l
                 end
 
                 @testset "reverse" begin
