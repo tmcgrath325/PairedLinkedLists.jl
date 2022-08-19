@@ -286,14 +286,14 @@ Create an list node containing `data` of the appropriate type for the provided `
 newnode(l::AbstractLinkedList, data) = nodetype(l)(l, data)
 
 """
-    bool = athead(node)
+    athead(node) -> Bool
 
 Return true if the node is the "dummy" node at the beginning of the list, and false otherwise.
 """
 athead(node::AbstractListNode) = node === node.prev
 
 """
-    bool = attail(node)
+    attail(node) -> Bool
 
 Return true if the node is the "dummy" node at the end of the list, and false otherwise.
 """
@@ -302,32 +302,65 @@ attail(node::AbstractListNode) = node === node.next
 # Iterating with a node returns the nodes themselves, and terminates at a list's tail
 Base.iterate(node::AbstractListNode) = iterate(node, node)
 Base.iterate(::AbstractListNode, node::AbstractListNode) = attail(node) ? nothing : (node, node.next)
-struct IteratingListNodes{S<:AbstractListNode}
+
+"""
+    ListNodeIterator(start [, rev])
+
+Returns an iterator over the nodes of a linked list, starting at the specified node `start`.
+
+If `rev` is `true`, the iterator will advance toward the head of the list.
+Otherwise, it will advance toward the tail of the list.
+"""
+struct ListNodeIterator{S<:AbstractListNode}
     start::S
     rev::Bool
-    function IteratingListNodes(start::S; rev::Bool = false) where S
+    function ListNodeIterator(start::S; rev::Bool = false) where S
         return new{S}(start, rev)
     end
 end
-IteratingListNodes(l::AbstractLinkedList; rev::Bool = false) = IteratingListNodes(rev ? l.tail.prev : l.head.next; rev = rev)
-Base.iterate(iter::IteratingListNodes) = iterate(iter, iter.start)
-Base.iterate(iter::IteratingListNodes{S}, node::S) where S = iter.rev ? (athead(node) ? nothing : (node, node.prev)) : (attail(node) ? nothing : (node, node.next))
-Base.IteratorSize(::IteratingListNodes) = Base.SizeUnknown()
+"""
+    ListNodeIterator(list [, rev])
+
+Returns an iterator over the nodes of a linked list.
+
+If `rev` is `true`, the iterator will start at the tail of the list and advance toward the head.
+Otherwise, it will start at the head of the list and advance toward the tail.
+"""
+ListNodeIterator(l::AbstractLinkedList; rev::Bool = false) = ListNodeIterator(rev ? l.tail.prev : l.head.next; rev = rev)
+Base.iterate(iter::ListNodeIterator) = iterate(iter, iter.start)
+Base.iterate(iter::ListNodeIterator{S}, node::S) where S = iter.rev ? (athead(node) ? nothing : (node, node.prev)) : (attail(node) ? nothing : (node, node.next))
+Base.IteratorSize(::ListNodeIterator) = Base.SizeUnknown()
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractLinkedList) = iterate(l, l.head.next)
 Base.iterate(::AbstractLinkedList, node::AbstractListNode) = attail(node) ? nothing : (node.data, node.next)
-struct IteratingListData{S<:AbstractListNode}
+"""
+    ListDataIterator(start [, rev])
+
+Returns an iterator over the data contained in a linked list, starting at the specified node `start`.
+
+If `rev` is `true`, the iterator will advance toward the head of the list.
+Otherwise, it will advance toward the tail of the list.
+"""
+struct ListDataIterator{S<:AbstractListNode}
     start::S
     rev::Bool
-    function IteratingListData(start::S; rev::Bool = false) where S
+    function ListDataIterator(start::S; rev::Bool = false) where S
         return new{S}(start, rev)
     end
 end
-IteratingListData(l::AbstractLinkedList{T}; rev::Bool = false) where T = IteratingListData(rev ? l.tail.prev : l.head.next; rev = rev)
-Base.iterate(iter::IteratingListData) = iterate(iter, iter.start)
-Base.iterate(iter::IteratingListData{S}, node::S) where S =  iter.rev ? (athead(node) ? nothing : (node.data, node.prev)) : (attail(node) ? nothing : (node.data, node.next))
-Base.IteratorSize(::IteratingListData) = Base.SizeUnknown()
+"""
+    ListDataIterator(list [, rev])
+
+Returns an iterator over the data contained in a linked list.
+
+If `rev` is `true`, the iterator will start at the tail of the list and advance toward the head.
+Otherwise, it will start at the head of the list and advance toward the tail.
+"""
+ListDataIterator(l::AbstractLinkedList{T}; rev::Bool = false) where T = ListDataIterator(rev ? l.tail.prev : l.head.next; rev = rev)
+Base.iterate(iter::ListDataIterator) = iterate(iter, iter.start)
+Base.iterate(iter::ListDataIterator{S}, node::S) where S =  iter.rev ? (athead(node) ? nothing : (node.data, node.prev)) : (attail(node) ? nothing : (node.data, node.next))
+Base.IteratorSize(::ListDataIterator) = Base.SizeUnknown()
 
 Base.isempty(l::AbstractLinkedList) = l.len == 0
 Base.length(l::AbstractLinkedList) = l.len
@@ -340,7 +373,7 @@ Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{S}) where {T,S} = f
 
 function Base.:(==)(l1::AbstractLinkedList{T}, l2::AbstractLinkedList{T}) where T
     length(l1) == length(l2) || return false
-    for (i, j) in zip(IteratingListNodes(l1), IteratingListNodes(l2))
+    for (i, j) in zip(ListNodeIterator(l1), ListNodeIterator(l2))
         i == j || return false
     end
     return true
@@ -370,7 +403,7 @@ function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
 end
 
 function Base.filter!(f::Function, l::L) where L <: AbstractLinkedList
-    for n in IteratingListNodes(l)
+    for n in ListNodeIterator(l)
         if !f(n.data)
             deletenode!(n)
         end
@@ -383,7 +416,7 @@ function Base.reverse!(l::L) where L <: AbstractLinkedList
     prevprevnode = l.tail
     prevnode = l.tail
     oldtail = tail(l)
-    for (i,n) in enumerate(IteratingListNodes(l))
+    for (i,n) in enumerate(ListNodeIterator(l))
         prevnode.prev = n
         if i>1
             prevnode.next = prevprevnode
@@ -403,7 +436,7 @@ function Base.copy!(l2::L, l::L) where L <: Union{DoublyLinkedList, TargetedLink
     haspartner(l) && addpartner!(l2, l.partner)
     len = l2.len
     existingnode = l2.head
-    for (i,n) in enumerate(IteratingListNodes(l))
+    for (i,n) in enumerate(ListNodeIterator(l))
         if i<=len
             existingnode = existingnode.next
             existingnode.data = n.data
@@ -423,7 +456,7 @@ end
 function Base.copy(l::L) where L <: Union{DoublyLinkedList, TargetedLinkedList}
     l2 = L()
     haspartner(l) && addpartner!(l2, l.partner)
-    for n in IteratingListNodes(l)
+    for n in ListNodeIterator(l)
         push!(l2, n.data)
         haspartner(n) && addpartner!(tail(l2), n.partner)
     end
@@ -438,7 +471,7 @@ function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
     partnermap = Tuple{Int,nodetype(L)}[]
 
     existingnode = l2.head
-    for (i,n) in enumerate(IteratingListNodes(l))
+    for (i,n) in enumerate(ListNodeIterator(l))
         if i<=len
             existingnode = existingnode.next
             existingnode.data = n.data
@@ -453,7 +486,7 @@ function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
         l2.len = l.len
     end
     existingnode = partner2.head
-    for (i,n) in enumerate(IteratingListNodes(l.partner))
+    for (i,n) in enumerate(ListNodeIterator(l.partner))
         if i<=plen
             existingnode = existingnode.next
             existingnode.data = n.data
@@ -478,11 +511,11 @@ function Base.copy(l::L) where L <: PairedLinkedList
     addpartner!(l2, partner2)
     partnermap = Tuple{Int,nodetype(L)}[]
 
-    for (i,n) in enumerate(IteratingListNodes(l))
+    for (i,n) in enumerate(ListNodeIterator(l))
         push!(l2, n.data)
         haspartner(n) && push!(partnermap, (i,n.partner))
     end
-    for n in IteratingListNodes(l.partner)
+    for n in ListNodeIterator(l.partner)
         push!(partner2, n.data)
         if haspartner(n)
             partneridx = getfirst(x->n===x[2], partnermap)[1]
@@ -545,7 +578,7 @@ function Base.append!(l1::L, l2::L) where L <: AbstractLinkedList
     if haspartner(l2)
         l1.partner === l2.partner || throw(ArgumentError("The lists must have the same partner to be combined."))
     end
-    for node in IteratingListNodes(l2)
+    for node in ListNodeIterator(l2)
         node.list = l1
     end
     tail(l1).next = head(l2)
@@ -833,7 +866,7 @@ function removepartner!(list::PairedLinkedList)
         partner = list.partner
         list.partner = list
         partner.partner = partner
-        for node in IteratingListNodes(list)
+        for node in ListNodeIterator(list)
             removepartner!(node)
         end
     end
@@ -842,7 +875,7 @@ end
 function removepartner!(list::TargetedLinkedList)
     if haspartner(list)
         list.partner = list
-        for node in IteratingListNodes(list)
+        for node in ListNodeIterator(list)
             removepartner!(node)
         end
     end

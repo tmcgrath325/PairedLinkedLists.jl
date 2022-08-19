@@ -29,7 +29,7 @@ export popat!
 
 export AbstractListNode, ListNode, PairedListNode, TargetedListNode
 export AbstractLinkedList, DoublyLinkedList, PairedLinkedList, TargetedLinkedList
-export head, tail, athead, attail, IteratingListNodes, IteratingListData
+export head, tail, athead, attail, ListNodeIterator, ListDataIterator
 export nodetype, getnode, newnode, deletenode!, insertnode!
 export haspartner, addpartner!, removepartner!
 export getfirst

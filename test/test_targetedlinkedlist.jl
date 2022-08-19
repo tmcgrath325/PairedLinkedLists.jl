@@ -26,16 +26,16 @@
                 for (i,data) in enumerate(l)
                     @test data == i
                 end
-                for (i,data) in enumerate(IteratingListData(l))
+                for (i,data) in enumerate(ListDataIterator(l))
                     @test data == i
                 end
-                for (i,data) in enumerate(IteratingListData(l; rev=true))
+                for (i,data) in enumerate(ListDataIterator(l; rev=true))
                     @test data == n-i+1
                 end
-                for (i,data) in enumerate(IteratingListData(l.head.next.next))
+                for (i,data) in enumerate(ListDataIterator(l.head.next.next))
                     @test data == i+1
                 end
-                for (i,data) in enumerate(IteratingListData(l.tail.prev.prev; rev=true))
+                for (i,data) in enumerate(ListDataIterator(l.tail.prev.prev; rev=true))
                     @test data == n-i
                 end
             end
@@ -44,16 +44,16 @@
                 for (i,node) in enumerate(l.head.next)
                     @test node == newnode(l,i)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l))
+                for (i,node) in enumerate(ListNodeIterator(l))
                     @test node == newnode(l,i)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l; rev=true))
+                for (i,node) in enumerate(ListNodeIterator(l; rev=true))
                     @test node == newnode(l,n-i+1)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l.head.next.next))
+                for (i,node) in enumerate(ListNodeIterator(l.head.next.next))
                     @test node == newnode(l,i+1)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l.tail.prev.prev; rev=true))
+                for (i,node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev=true))
                     @test node == newnode(l,n-i)
                 end
             end
@@ -169,27 +169,27 @@
                 @testset "copy" begin
                     dl = DoublyLinkedList{Int}(1:n...)
                     l2 = TargetedLinkedList(dl)
-                    for n in IteratingListNodes(dl)
+                    for n in ListNodeIterator(dl)
                         push!(l2, n.data)
                         addpartner!(tail(l2), n)
                     end
                     l3 = TargetedLinkedList(l2)
-                    for n in IteratingListNodes(l2)
+                    for n in ListNodeIterator(l2)
                         push!(l3, n.data)
                         addpartner!(tail(l3), n)
                     end
                     l4 = copy(l2)
                     @test l4 == l2
-                    @test [x.partner for x in IteratingListNodes(l4)] == [x.partner for x in IteratingListNodes(l2)]
+                    @test [x.partner for x in ListNodeIterator(l4)] == [x.partner for x in ListNodeIterator(l2)]
                     l5 = typeof(l2)()
                     copy!(l5, l2)
                     @test l5 == l2
-                    @test [x.partner for x in IteratingListNodes(l5)] == [x.partner for x in IteratingListNodes(l2)]
+                    @test [x.partner for x in ListNodeIterator(l5)] == [x.partner for x in ListNodeIterator(l2)]
                     l6 = typeof(l3)()
                     push!(l6, 1:2*i...)
                     copy!(l6, l3)
                     @test l6 == l3
-                    @test [x.partner for x in IteratingListNodes(l6)] == [x.partner for x in IteratingListNodes(l3)]
+                    @test [x.partner for x in ListNodeIterator(l6)] == [x.partner for x in ListNodeIterator(l3)]
                 end
 
                 @testset "reverse" begin
@@ -306,7 +306,7 @@
             pl1 = PairedLinkedList{Int}(1:n...)
             pl2 = PairedLinkedList{Int}(1:n...)
             addpartner!(pl1, pl2)
-            for (n1,n2) in zip(IteratingListNodes(pl1), IteratingListNodes(pl2))
+            for (n1,n2) in zip(ListNodeIterator(pl1), ListNodeIterator(pl2))
                 addpartner!(n1, n2)
             end
             l1 = TargetedLinkedList(dl1)  
@@ -341,7 +341,7 @@
                 end
                 partnersdata1 = Int[]
                 partnersdata2 = Int[]
-                for (n1, n2) in zip(IteratingListNodes(l1), IteratingListNodes(l2))
+                for (n1, n2) in zip(ListNodeIterator(l1), ListNodeIterator(l2))
                     push!(partnersdata1, n1.partner.data)
                     push!(partnersdata2, n2.partner.data)
                 end
@@ -364,7 +364,7 @@
                 @test_throws MethodError addpartner!(l1, pl1)
                 @test_throws MethodError addpartner!(l2, dl1)
                 @test_throws MethodError addpartner!(l2, pl1)
-                for (nt1, nt2, nd1) in zip(IteratingListNodes(l1), IteratingListNodes(l2), IteratingListNodes(dl1))
+                for (nt1, nt2, nd1) in zip(ListNodeIterator(l1), ListNodeIterator(l2), ListNodeIterator(dl1))
                     addpartner!(nt1,nd1)
                     addpartner!(nt2,nt1)
                 end
@@ -374,7 +374,7 @@
                     @test !haspartner(n1)
                     @test n2.partner == n1
                 end
-                for (nt3, np1) in zip(IteratingListNodes(l3), IteratingListNodes(pl1))
+                for (nt3, np1) in zip(ListNodeIterator(l3), ListNodeIterator(pl1))
                     addpartner!(nt3,np1)
                 end
                 addpartner!(l3, pl2)
@@ -386,27 +386,27 @@
             end
 
             @testset "remove list partners" begin
-                for (nt1,nd2) in zip(IteratingListNodes(l1), IteratingListNodes(dl2))
+                for (nt1,nd2) in zip(ListNodeIterator(l1), ListNodeIterator(dl2))
                     addpartner!(nt1,nd2)
                 end
                 removepartner!(l1)
                 @test !haspartner(l1)
                 @test l2.partner === l1
-                for n in IteratingListNodes(l1)
+                for n in ListNodeIterator(l1)
                     @test !haspartner(n)
                 end
                 removepartner!(l2)
                 @test !haspartner(l2)
-                for n in IteratingListNodes(l2)
+                for n in ListNodeIterator(l2)
                     @test !haspartner(n)
                 end
-                for (nt3, np2) in zip(IteratingListNodes(l3), IteratingListNodes(pl2))
+                for (nt3, np2) in zip(ListNodeIterator(l3), ListNodeIterator(pl2))
                     addpartner!(nt3,np2)
                 end
                 removepartner!(l3)
                 @test !haspartner(l3)
                 @test pl2.partner == pl1
-                for (nt3,np2) in zip(IteratingListNodes(l3), IteratingListNodes(pl2))
+                for (nt3,np2) in zip(ListNodeIterator(l3), ListNodeIterator(pl2))
                     @test !haspartner(nt3)
                     @test haspartner(np2)
                 end
@@ -526,7 +526,7 @@
                 end
             end
             partnersdata = Int[]
-            for n in IteratingListNodes(l2)
+            for n in ListNodeIterator(l2)
                 haspartner(n) && push!(partnersdata, n.partner.partner.data)
             end
             @test partnersdata == [val for val in filter(x->x>0, p)]
@@ -539,7 +539,7 @@
                 end
             end
             partnersdata = Int[]
-            for n in IteratingListNodes(l2)
+            for n in ListNodeIterator(l2)
                 haspartner(n) && push!(partnersdata, n.partner.partner.data)
             end
             @test partnersdata == [val for val in filter(x->x>0, p)]

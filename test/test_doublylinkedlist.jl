@@ -27,16 +27,16 @@
                 for (i,data) in enumerate(l)
                     @test data == i
                 end
-                for (i,data) in enumerate(IteratingListData(l))
+                for (i,data) in enumerate(ListDataIterator(l))
                     @test data == i
                 end
-                for (i,data) in enumerate(IteratingListData(l; rev=true))
+                for (i,data) in enumerate(ListDataIterator(l; rev=true))
                     @test data == n-i+1
                 end
-                for (i,data) in enumerate(IteratingListData(l.head.next.next))
+                for (i,data) in enumerate(ListDataIterator(l.head.next.next))
                     @test data == i+1
                 end
-                for (i,data) in enumerate(IteratingListData(l.tail.prev.prev; rev=true))
+                for (i,data) in enumerate(ListDataIterator(l.tail.prev.prev; rev=true))
                     @test data == n-i
                 end
             end
@@ -45,16 +45,16 @@
                 for (i,node) in enumerate(l.head.next)
                     @test node == newnode(l,i)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l))
+                for (i,node) in enumerate(ListNodeIterator(l))
                     @test node == newnode(l,i)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l; rev=true))
+                for (i,node) in enumerate(ListNodeIterator(l; rev=true))
                     @test node == newnode(l,n-i+1)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l.head.next.next))
+                for (i,node) in enumerate(ListNodeIterator(l.head.next.next))
                     @test node == newnode(l,i+1)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l.tail.prev.prev; rev=true))
+                for (i,node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev=true))
                     @test node == newnode(l,n-i)
                 end
             end
