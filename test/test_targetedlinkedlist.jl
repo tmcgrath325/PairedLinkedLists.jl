@@ -199,6 +199,27 @@
             end
         end
 
+        @testset "filter / show" begin
+            for i = 1:n
+                @testset "filter" begin
+                    l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                    @test filter(x -> x % 2 == 0, l) == typeof(l)(2:2:n...)
+                end
+
+                @testset "show" begin
+                    l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                    io = IOBuffer()
+                    @test sprint(io -> show(io, head(l))) == "$(typeof(head(l)))($(head(l).data))"
+                    io1 = IOBuffer()
+                    write(io1, "$(l.len)-element TargetedLinkedList{Int64, DoublyLinkedList{Int64}, ListNode{Int64, DoublyLinkedList{Int64}}}(");
+                    write(io1, join(l, ", "));
+                    write(io1, ")")
+                    seekstart(io1)
+                    @test sprint(io -> show(io, l)) == read(io1, String)
+                end
+            end
+        end
+
         @testset "insert / popat" begin
             @testset "insert" begin
                 l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)

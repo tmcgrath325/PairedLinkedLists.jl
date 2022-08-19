@@ -209,7 +209,7 @@
             end
         end
 
-        @testset "filter" begin
+        @testset "filter / show" begin
             for i = 1:n
                 @testset "filter" begin
                     l = PairedLinkedList{Int}(1:n...)
@@ -221,7 +221,7 @@
                     io = IOBuffer()
                     @test sprint(io -> show(io, head(l))) == "$(typeof(head(l)))($(head(l).data))"
                     io1 = IOBuffer()
-                    write(io1, "PairedLinkedList{Int32}(");
+                    write(io1, "$(l.len)-element PairedLinkedList{Int32}(");
                     write(io1, join(l, ", "));
                     write(io1, ")")
                     seekstart(io1)

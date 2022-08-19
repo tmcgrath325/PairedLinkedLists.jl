@@ -183,7 +183,7 @@
             end
         end
 
-        @testset "map / filter" begin
+        @testset "map / filter / show" begin
             for i = 1:n
                 @testset "map" begin
                     l = DoublyLinkedList{Int}(1:n...)
@@ -205,7 +205,7 @@
                     io = IOBuffer()
                     @test sprint(io -> show(io, l.head.next)) == "$(typeof(l.head.next))($(l.head.next.data))"
                     io1 = IOBuffer()
-                    write(io1, "DoublyLinkedList{Int32}(");
+                    write(io1, "$(l.len)-element DoublyLinkedList{Int32}(");
                     write(io1, join(l, ", "));
                     write(io1, ")")
                     seekstart(io1)

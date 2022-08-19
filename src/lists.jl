@@ -896,6 +896,7 @@ function Base.show(io::IO, node::AbstractListNode)
 end
 
 function Base.show(io::IO, l::AbstractLinkedList)
+    print(io, l.len, "-element ")
     print(io, typeof(l), '(')
     join(io, l, ", ")
     print(io, ')')
