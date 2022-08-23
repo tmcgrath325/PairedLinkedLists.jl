@@ -526,6 +526,12 @@ function Base.copy(l::L) where L <: PairedLinkedList
 end
 
 function Base.empty!(l::AbstractLinkedList)
+    if haspartner(l)
+        # remove all of the inter-list links
+        partner = l.partner
+        removepartner!(l)
+        addpartner!(l, partner)
+    end
     l.head.next = l.tail
     l.tail.prev = l.head
     l.len = 0
