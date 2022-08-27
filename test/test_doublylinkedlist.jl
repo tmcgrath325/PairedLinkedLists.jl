@@ -63,7 +63,7 @@
         @testset "push back / pop back" begin
             l = DoublyLinkedList{Int}()
             dummy_list = DoublyLinkedList{Int}()
-            @test_throws ArgumentError insertnode!(newnode(dummy_list, 0), l.head)
+            @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
                 for i = 1:n
@@ -205,7 +205,7 @@
                     io = IOBuffer()
                     @test sprint(io -> show(io, l.head.next)) == "$(typeof(l.head.next))($(l.head.next.data))"
                     io1 = IOBuffer()
-                    write(io1, "$(l.len)-element DoublyLinkedList{Int32}(");
+                    write(io1, "DoublyLinkedList{Int32}(");
                     write(io1, join(l, ", "));
                     write(io1, ")")
                     seekstart(io1)

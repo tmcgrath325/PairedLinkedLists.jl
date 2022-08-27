@@ -70,7 +70,7 @@
         @testset "push back / pop back" begin
             l = PairedLinkedList{Int}()
             dummy_list = PairedLinkedList{Int}()
-            @test_throws ArgumentError insertnode!(newnode(dummy_list, 0), l.head)
+            @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
                 for i = 1:n
@@ -150,10 +150,10 @@
 
                 @testset "append" begin
                     l2 = PairedLinkedList{Int}(n+1:2n...)
-                    addpartner!(l2, dummy_list)
-                    addpartner!(l2.head.next, dummy_list.head)
+                    addtarget!(l2, dummy_list)
+                    addtarget!(l2.head.next, dummy_list.head)
                     @test_throws ArgumentError append!(l, l2)
-                    removepartner!(l2)
+                    removetarget!(l2)
                     append!(l, l2)
                     @test l == PairedLinkedList{Int}(1:2n...)
                     @test collect(l) == collect(PairedLinkedList{Int}(1:2n...))
@@ -178,28 +178,28 @@
                 @testset "copy" begin
                     l2 = PairedLinkedList{Int}(1:n...)
                     l3 = PairedLinkedList{Int}(1:n...)
-                    addpartner!(l2,l3)
+                    addtarget!(l2,l3)
                     for (n2,n3) in zip(ListNodeIterator(l2), ListNodeIterator(l3; rev=true))
-                        addpartner!(n2, n3)
+                        addtarget!(n2, n3)
                     end
                     l4 = copy(l2)
                     @test l4 == l2
-                    @test [x.partner for x in ListNodeIterator(l4)] == [x.partner for x in ListNodeIterator(l2)]
+                    @test [x.target for x in ListNodeIterator(l4)] == [x.target for x in ListNodeIterator(l2)]
                     l5 = PairedLinkedList{Int}()
                     copy!(l5, l2)
                     @test l5 == l2
-                    @test l5.partner == l3
-                    @test [x.partner for x in ListNodeIterator(l5)] == [x.partner for x in ListNodeIterator(l2)]
+                    @test l5.target == l3
+                    @test [x.target for x in ListNodeIterator(l5)] == [x.target for x in ListNodeIterator(l2)]
                     l6 = PairedLinkedList{Int}(1:2*i...)
                     l7 = PairedLinkedList{Int}(1:2*i...)
-                    addpartner!(l6, l7)
+                    addtarget!(l6, l7)
                     for (n6,n7) in zip(ListNodeIterator(l6), ListNodeIterator(l7; rev=true))
-                        addpartner!(n6, n7)
+                        addtarget!(n6, n7)
                     end
                     copy!(l6, l2)
                     @test l6 == l2
                     @test l7 == l3
-                    @test [x.partner for x in ListNodeIterator(l6)] == [x.partner for x in ListNodeIterator(l2)]
+                    @test [x.target for x in ListNodeIterator(l6)] == [x.target for x in ListNodeIterator(l2)]
                 end
 
                 @testset "reverse" begin
@@ -221,7 +221,7 @@
                     io = IOBuffer()
                     @test sprint(io -> show(io, head(l))) == "$(typeof(head(l)))($(head(l).data))"
                     io1 = IOBuffer()
-                    write(io1, "$(l.len)-element PairedLinkedList{Int32}(");
+                    write(io1, "PairedLinkedList{Int32}(");
                     write(io1, join(l, ", "));
                     write(io1, ")")
                     seekstart(io1)
@@ -331,105 +331,105 @@
             @test l == emptyl
         end
 
-        @testset "partners" begin
+        @testset "targets" begin
             l1 = PairedLinkedList{Int}(1:n...)  
             l2 = PairedLinkedList{Int}(1:n...)
             l3 = PairedLinkedList{Int}(1:n...)
             l4 = PairedLinkedList{Int}(l3)
             dl = DoublyLinkedList{Int}(1:n...)
-            @test_throws ArgumentError addpartner!(newnode(l1, 1), newnode(l2, 1))
-            addpartner!(l1, l2)
+            @test_throws ArgumentError addtarget!(newnode(l1, 1), newnode(l2, 1))
+            addtarget!(l1, l2)
             push!(l4, 1:10...)
-            @test !haspartner(l3)
-            @test l4.partner === l3
-            addpartner!(l3, l4)
+            @test !hastarget(l3)
+            @test l4.target === l3
+            addtarget!(l3, l4)
 
-            @testset "add node partners" begin
+            @testset "add node targets" begin
                 for i=1:n
                     node1 = getnode(l1, 1)
                     node2 = getnode(l2, i)
-                    prevpartner = node1.partner
-                    addpartner!(node1, node2)
-                    @test node1.partner === node2 && node2.partner === node1
-                    @test haspartner(node1) && haspartner(node2)
+                    prevtarget = node1.target
+                    addtarget!(node1, node2)
+                    @test node1.target === node2 && node2.target === node1
+                    @test hastarget(node1) && hastarget(node2)
                     if i != 1
-                        @test prevpartner.partner === prevpartner
-                        @test !haspartner(prevpartner)
+                        @test prevtarget.target === prevtarget
+                        @test !hastarget(prevtarget)
                     end
                 end
 
                 for i=1:n
                     node1 = getnode(l1, i)
                     node2 = getnode(l2, n-i+1)
-                    addpartner!(node1, node2)
+                    addtarget!(node1, node2)
                 end
-                partnersdata1 = Int[]
-                partnersdata2 = Int[]
+                targetsdata1 = Int[]
+                targetsdata2 = Int[]
                 for (n1, n2) in zip(ListNodeIterator(l1), ListNodeIterator(l2))
-                    push!(partnersdata1, n1.partner.data)
-                    push!(partnersdata2, n2.partner.data)
+                    push!(targetsdata1, n1.target.data)
+                    push!(targetsdata2, n2.target.data)
                 end
-                @test partnersdata1 == partnersdata2 == [n:-1:1...]
+                @test targetsdata1 == targetsdata2 == [n:-1:1...]
 
                 for shift = 1:floor(n/2)
                     for i=1:n
                         node1 = getnode(l1, i)
                         node2 = getnode(l2, Int(mod(i + shift - 1, n) + 1))
-                        addpartner!(node1, node2)
+                        addtarget!(node1, node2)
                     end
-                    partnersdata1 = Int[]
-                    partnersdata2 = Int[]
+                    targetsdata1 = Int[]
+                    targetsdata2 = Int[]
                     for (n1, n2) in zip(ListNodeIterator(l1), ListNodeIterator(l2))
-                        push!(partnersdata1, n1.partner.data)
-                        push!(partnersdata2, n2.partner.data)
+                        push!(targetsdata1, n1.target.data)
+                        push!(targetsdata2, n2.target.data)
                     end
-                    @test circshift(partnersdata1, shift) == circshift(partnersdata2, -shift) == [1:n...]
+                    @test circshift(targetsdata1, shift) == circshift(targetsdata2, -shift) == [1:n...]
                 end
 
-                @test_throws MethodError addpartner!(head(l1), head(dl))
+                @test_throws MethodError addtarget!(head(l1), head(dl))
             end
 
-            @testset "remove node partners" begin
+            @testset "remove node targets" begin
                 mid = Int(floor(n/2))
                 for i=1:mid
                     node = getnode(l1, i)
-                    partner = node.partner
-                    removepartner!(node)
-                    @test node.partner === node
-                    @test partner.partner === partner
-                    removepartner!(getnode(dl, i))
+                    target = node.target
+                    removetarget!(node)
+                    @test node.target === node
+                    @test target.target === target
+                    removetarget!(getnode(dl, i))
                 end
                 for i=mid:n
                     node = getnode(l1, i)
-                    partner = node.partner
-                    removepartner!(l1, i)
-                    @test node.partner === node
-                    @test partner.partner === partner
-                    removepartner!(getnode(dl, i))
+                    target = node.target
+                    removetarget!(l1, i)
+                    @test node.target === node
+                    @test target.target === target
+                    removetarget!(getnode(dl, i))
                 end
             end
 
-            @testset "add list partners" begin
-                @test_throws MethodError addpartner!(l1, dl)
+            @testset "add list targets" begin
+                @test_throws MethodError addtarget!(l1, dl)
                 for (n3, n4) in zip(ListNodeIterator(l3), ListNodeIterator(l4))
-                    addpartner!(n3,n4)
+                    addtarget!(n3,n4)
                 end
-                addpartner!(l1,l3)
-                @test l1.partner === l3 && l3.partner === l1
-                @test !haspartner(l2) && !haspartner(l4)
+                addtarget!(l1,l3)
+                @test l1.target === l3 && l3.target === l1
+                @test !hastarget(l2) && !hastarget(l4)
                 for (n2, n4) in zip(ListNodeIterator(l2), ListNodeIterator(l4))
-                    @test !haspartner(n2) && !haspartner(n4)
+                    @test !hastarget(n2) && !hastarget(n4)
                 end
             end
 
-            @testset "remove list partners" begin
+            @testset "remove list targets" begin
                 for (n1, n3) in zip(ListNodeIterator(l1), ListNodeIterator(l3))
-                    addpartner!(n1,n3)
+                    addtarget!(n1,n3)
                 end
-                removepartner!(l1)
-                @test !haspartner(l1) && !haspartner(l3)
+                removetarget!(l1)
+                @test !hastarget(l1) && !hastarget(l3)
                 for (n1, n3) in zip(ListNodeIterator(l2), ListNodeIterator(l4))
-                    @test !haspartner(n1) && !haspartner(n3)
+                    @test !hastarget(n1) && !hastarget(n3)
                 end
             end
         end
@@ -438,7 +438,7 @@
     @testset "random operations" begin
         l1 = PairedLinkedList{Int}()
         l2 = PairedLinkedList{Int}()
-        addpartner!(l1, l2)
+        addtarget!(l1, l2)
         r1 = Int[]
         r2 = Int[]
         m = 100
@@ -531,51 +531,51 @@
                 if rand(Bool)
                     i = rand(1:length(l1))
                     j = rand(1:length(l2))
-                    addpartner!(getnode(l1, i), getnode(l2, j))
+                    addtarget!(getnode(l1, i), getnode(l2, j))
                 end
                 if rand(Bool)
                     i = rand(1:length(l1))
                     j = rand(1:length(l2))
-                    addpartner!(getnode(l2, j), getnode(l1, i))
+                    addtarget!(getnode(l2, j), getnode(l1, i))
                 end
             end
-            partnersdata1 = Int[]
-            partnersdata2 = Int[]
+            targetsdata1 = Int[]
+            targetsdata2 = Int[]
             for n in ListNodeIterator(l1)
-                haspartner(n) && push!(partnersdata1, n.partner.data)
+                hastarget(n) && push!(targetsdata1, n.target.data)
             end
             for n in ListNodeIterator(l2)
-                haspartner(n) && push!(partnersdata2, n.partner.partner.data)
+                hastarget(n) && push!(targetsdata2, n.target.target.data)
             end
-            match = length(partnersdata1) == length(partnersdata2)
-            for d1 in partnersdata1
+            match = length(targetsdata1) == length(targetsdata2)
+            for d1 in targetsdata1
                 !match && break
-                match = d1 ∈ partnersdata2
+                match = d1 ∈ targetsdata2
             end
             @test match
 
             for i = 1:min(length(l1), length(l2), 20)
                 if rand(Bool)
                     i = rand(1:length(l1))
-                    removepartner!(getnode(l1, i))
+                    removetarget!(getnode(l1, i))
                 end
                 if rand(Bool)
                     j = rand(1:length(l2))
-                    removepartner!(getnode(l2, j))
+                    removetarget!(getnode(l2, j))
                 end
             end
-            partnersdata1 = Int[]
-            partnersdata2 = Int[]
+            targetsdata1 = Int[]
+            targetsdata2 = Int[]
             for n in ListNodeIterator(l1)
-                haspartner(n) && push!(partnersdata1, n.partner.data)
+                hastarget(n) && push!(targetsdata1, n.target.data)
             end
             for n in ListNodeIterator(l2)
-                haspartner(n) && push!(partnersdata2, n.partner.partner.data)
+                hastarget(n) && push!(targetsdata2, n.target.target.data)
             end
-            match = length(partnersdata1) == length(partnersdata2)
-            for d1 in partnersdata1
+            match = length(targetsdata1) == length(targetsdata2)
+            for d1 in targetsdata1
                 !match && break
-                match = d1 ∈ partnersdata2
+                match = d1 ∈ targetsdata2
             end
             @test match
         end
