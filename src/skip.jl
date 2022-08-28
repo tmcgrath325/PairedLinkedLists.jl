@@ -51,12 +51,10 @@ end
 
 function search(l::AbstractSkipLinkedList{T}, data::T) where T
     sdata = l.sortedby(data)
-    right = Vector{nodetype(l)}(undef, l.nlevels)
     left = Vector{nodetype(l)}(undef, l.nlevels)
     rn = getfirst(x -> l.sortedby(x.data) > sdata, l.top)
     rn = isnothing(rn) ? l.toptail : rn
     ln = rn.prev
-    right[end] = rn
     left[end] = ln
     for level = l.nlevels-1:-1:1
         ln = ln.down
@@ -72,7 +70,6 @@ function search(l::AbstractSkipLinkedList{T}, data::T) where T
             end
         end
         left[level] = ln
-        right[level] = rn
     end
     return left
 end
@@ -91,17 +88,19 @@ end
 function Base.push!(l::AbstractSkipLinkedList{T}, data::T) where T
     left = search(l, data)
     bottomnode = insertafter!(newnode(l,data), left[1])
-    if l.len === 1
-        l.top = bottomnode
-        return l
-    elseif left[1] === l.head
-        node = l.top
-        for i=1:l.nlevels-1
-            node.data = left[1].data
-            node = node.down
+    if left[1] === l.head
+        if l.nlevels === 1
+           l.top = bottomnode 
+        else
+            node = l.top
+            for i=1:l.nlevels-1
+                node.data = data
+                node = node.down
+            end
+            node.up.down = bottomnode
+            bottomnode.up = node.up 
+            node.up = node
         end
-        node.down = bottomnode
-        bottomnode.up = node
         return l
     elseif l.len > l.skipfactor ^ l.nlevels
         l.nlevels += 1
