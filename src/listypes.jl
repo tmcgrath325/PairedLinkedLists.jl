@@ -78,13 +78,6 @@ mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractPaire
         node.target = node
         return node
     end
-    function PairedListNode{T,L}(list::L, data, target::PairedListNode{T,L}) where {T,L<:AbstractPairedLinkedList{T}}
-        node = new{T,L}(list, data)
-        node.next = node
-        node.prev = node
-        addtarget!(node, target)
-        return node
-    end
 end
 PairedListNode{T}(args...) where T = PairedListNode{T,PairedLinkedList{T}}(args...)
 
@@ -118,13 +111,6 @@ mutable struct TargetedListNode{T,N<:AbstractNode{T},L<:AbstractList{T}} <: Abst
         node.next = node
         node.prev = node
         node.target = node
-        return node
-    end
-    function TargetedListNode{T,N,L}(list::L, data, target::N) where {T,N,L}
-        node = new{T,N,L}(list, data)
-        node.next = node
-        node.prev = node
-        node.target = target
         return node
     end
 end
@@ -329,15 +315,6 @@ mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractPairedS
         node.up = node
         node.down = node
         node.target = node
-        return node
-    end
-    function PairedSkipNode{T,L}(list::L, data, target::PairedSkipNode{T}) where {T,L<:AbstractSkipList{T}}
-        node = new{T,L}(list, data)
-        node.next = node
-        node.prev = node
-        node.up = node
-        node.down = node
-        addtarget!(node, target)
         return node
     end
 end
