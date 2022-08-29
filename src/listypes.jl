@@ -7,7 +7,7 @@ abstract type AbstractList{T} end
 abstract type AbstractLinkedList{T} <: AbstractList{T} end
 abstract type AbstractDoublyLinkedList{T} <: AbstractLinkedList{T} end
 abstract type AbstractPairedLinkedList{T} <: AbstractLinkedList{T} end
-abstract type AbstractTargetedLinkedList{T,L,N} <: AbstractPairedLinkedList{T} end
+abstract type AbstractTargetedLinkedList{T,N,L} <: AbstractPairedLinkedList{T} end
 
 abstract type AbstractSkipLinkedList{T,F} <: AbstractList{T} end
 abstract type AbstractSkipList{T,F} <: AbstractSkipLinkedList{T,F} end
@@ -39,6 +39,7 @@ mutable struct ListNode{T,L<:AbstractDoublyLinkedList{T}} <: AbstractListNode{T,
         return node
     end
 end
+ListNode{T}(args...) where T = PairedListNode{T,PairedLinkedList{T}}(args...)
 
 """
     node = PairedListNode(list::PairedLinkedList, data)
@@ -80,6 +81,7 @@ mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractListN
         return node
     end
 end
+PairedListNode{T}(args...) where T = PairedListNode{T,PairedLinkedList{T}}(args...)
 
 """
     node = TargetListNode(list::AbstractTargetLinkedList, data, [target::AbstractListNode])
@@ -93,34 +95,35 @@ of its parent `list`.
 
 Unlike a `PairedListNode`, the `target` link for a `TargetListNode` is not assumed to be reciprocated.
 """
-mutable struct TargetedListNode{T,L<:AbstractLinkedList{T},N<:AbstractListNode{T,L},P<:AbstractTargetedLinkedList{T,L,N}} <: AbstractListNode{T,P}
-    list::P
+mutable struct TargetedListNode{T,N<:AbstractNode{T},L<:AbstractList{T}} <: AbstractListNode{T,L}
+    list::L
     data::T
-    prev::TargetedListNode{T,L,N,P}
-    next::TargetedListNode{T,L,N,P}
-    target::Union{N,TargetedListNode{T,L,N,P}}
-    function TargetedListNode{T,L,N,P}(list::P) where {T,L,N,P<:AbstractTargetedLinkedList{T,L,N}}
-        node = new{T,L,N,P}(list)
+    prev::TargetedListNode{T,N,L}
+    next::TargetedListNode{T,N,L}
+    target::Union{N,TargetedListNode{T,N,L}}
+    function TargetedListNode{T,N,L}(list::L) where {T,N,L}
+        node = new{T,N,L}(list)
         node.next = node
         node.prev = node
         node.target = node
         return node
     end
-    function TargetedListNode{T,L,N,P}(list::P, data) where {T,L,N,P<:AbstractTargetedLinkedList{T,L,N}}
-        node = new{T,L,N,P}(list, data)
+    function TargetedListNode{T,N,L}(list::L, data) where {T,N,L}
+        node = new{T,N,L}(list, data)
         node.next = node
         node.prev = node
         node.target = node
         return node
     end
-    function TargetedListNode{T,L,N,P}(list::P, data, target::N) where {T,L,N,P<:AbstractTargetedLinkedList{T,L,N}}
-        node = new{T,L,N,P}(list, data)
+    function TargetedListNode{T,N,L}(list::L, data, target::N) where {T,N,L}
+        node = new{T,N,L}(list, data)
         node.next = node
         node.prev = node
         node.target = target
         return node
     end
 end
+TargetedListNode{T,N}(args...) where {T,R,N<:AbstractNode{T,R}} = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(args...)
 
 
 """
@@ -205,8 +208,8 @@ function PairedLinkedList{T}(elts...) where T
 end
 
 """
-    l = TargetLinkedList{T,L,N}()
-    l = TargetLinkedList{T,L,N}(elts...)
+    l = TargetLinkedList{T,R,N}()
+    l = TargetLinkedList{T,R,N}(elts...)
     l = TargetLinkedList(list)
 
 Create a `TargetLinkedList` with nodes containing data of a specified type. 
@@ -217,38 +220,39 @@ The list contains its length `len`, a "dummy" node `head` at the beginning of th
 The first "real" node of a list  `l` can be accessed with `l.head.next` or `head(l)`. 
 Similarly, the last "real" node can be accessed with `l.tail.prev` or `tail(l)`.
 """
-mutable struct TargetedLinkedList{T,L<:AbstractLinkedList{T},N<:AbstractListNode{T,L}} <: AbstractTargetedLinkedList{T,L,N}
+mutable struct TargetedLinkedList{T,R<:AbstractList{T},N<:AbstractNode{T,R}} <: AbstractTargetedLinkedList{T,R,N}
     len::Int
-    target::Union{L,TargetedLinkedList{T,L,N}}
-    head::TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}
-    tail::TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}
-    function TargetedLinkedList{T,L,N}() where {T,L,N}
-        l = new{T,L,N}(0)
+    target::Union{R,TargetedLinkedList{T,R,N}}
+    head::TargetedListNode{T,N,TargetedLinkedList{T,R,N}}
+    tail::TargetedListNode{T,N,TargetedLinkedList{T,R,N}}
+    function TargetedLinkedList{T,R,N}() where {T,R,N}
+        l = new{T,R,N}(0)
         l.target = l
-        l.head = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}(l)
-        l.tail = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}(l)
+        l.head = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(l)
+        l.tail = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
     end
-    function TargetedLinkedList{T,L,N}(target::L) where {T,L,N}
-        l = new{T,L,N}(0, target)
-        l.head = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}(l)
-        l.tail = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}(l)
+    function TargetedLinkedList{T,R,N}(target::R) where {T,R,N}
+        l = new{T,R,N}(0, target)
+        l.head = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(l)
+        l.tail = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
     end
 end
 
-TargetedLinkedList(l::L) where {T, L<:AbstractLinkedList{T}} = TargetedLinkedList{T,L,nodetype(L)}(l)
-function TargetedLinkedList{T,L,N}(elts...) where {T,L,N}
-    l = TargetedLinkedList{T,L,N}()
+TargetedLinkedList(target::R) where {T, R<:AbstractList{T}} = TargetedLinkedList{T,R,nodetype(R)}(target)
+function TargetedLinkedList{T,R,N}(elts...) where {T,R,N}
+    l = TargetedLinkedList{T,R,N}()
     for elt in elts
         push!(l, elt)
     end
     return l
 end
+TargetedLinkedList{T,R}(args...) where {T,R} = TargetedLinkedList{T,R,nodetype(R)}(args...)
 
 
 

@@ -1,7 +1,7 @@
 @testset "TargetedLinkedList" begin
 
     @testset "empty list" begin
-        l1 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+        l1 = TargetedLinkedList{Int,DoublyLinkedList{Int}}()
         @test iterate(l1) === nothing
         @test isempty(l1)
         @test length(l1) == 0
@@ -20,7 +20,7 @@
         n = 10
 
         @testset "iterate" begin
-            l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+            l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
 
             @testset "data" begin
                 for (i,data) in enumerate(l)
@@ -60,8 +60,8 @@
         end
 
         @testset "push back / pop back" begin
-            l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
-            dummy_list = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+            l = TargetedLinkedList{Int,DoublyLinkedList{Int}}()
+            dummy_list = TargetedLinkedList{Int,DoublyLinkedList{Int}}()
             @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
@@ -70,10 +70,10 @@
                     @test last(l) == i
                     if i > 4
                         @test getindex(l, i) == i
-                        @test getindex(l, 1:floor(Int, i/2)) == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:floor(Int, i/2)...)
-                        @test l[1:floor(Int, i/2)] == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:floor(Int, i/2)...)
+                        @test getindex(l, 1:floor(Int, i/2)) == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:floor(Int, i/2)...)
+                        @test l[1:floor(Int, i/2)] == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:floor(Int, i/2)...)
                         setindex!(l, 0, i - 2)
-                        @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:i-3..., 0, i-1:i...)
+                        @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:i-3..., 0, i-1:i...)
                         setindex!(l, i - 2, i - 2)
                     end
                     @test lastindex(l) == i
@@ -84,10 +84,10 @@
                         @test j == k
                     end
                     if i > 3 && VERSION > VersionNumber(1,7,0)
-                        l1 = TargetedLinkedList{Int32,DoublyLinkedList{Int32},ListNode{Int32,DoublyLinkedList{Int32}}}(1:i...)
+                        l1 = TargetedLinkedList{Int32,DoublyLinkedList{Int32}}(1:i...)
                         io = IOBuffer()
-                        @test sprint(io -> show(io, iterate(l1))) == "(1, TargetedListNode{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(2))"
-                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, TargetedListNode{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(3))"
+                        @test sprint(io -> show(io, iterate(l1))) == "(1, TargetedListNode{Int32, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(2))"
+                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, TargetedListNode{Int32, ListNode{Int32, DoublyLinkedList{Int32}}, TargetedLinkedList{Int32, DoublyLinkedList{Int32}, ListNode{Int32, DoublyLinkedList{Int32}}}}(3))"
                     end
                     cl = collect(l)
                     @test isa(cl, Vector{Int})
@@ -108,7 +108,7 @@
         end
 
         @testset "push front / pop front" begin
-            l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+            l = TargetedLinkedList{Int,DoublyLinkedList{Int}}()
 
             @testset "push front" begin
                 for i = 1:n
@@ -146,22 +146,22 @@
                     push!(l2, n+1:2n...)
                     @test_throws MethodError append!(l, l0)
                     append!(l, l2)
-                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...)
-                    @test collect(l) == collect(TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...))
-                    l3 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:2n...)
+                    @test collect(l) == collect(TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:2n...))
+                    l3 = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                     append!(l3, n+1:2n...)
-                    @test l3 == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...)
-                    @test collect(l3) == collect(TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...))
+                    @test l3 == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:2n...)
+                    @test collect(l3) == collect(TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:2n...))
                 end
 
                 @testset "delete" begin
                     delete!(l, n+1:2n)
-                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                     for i = n:-1:1
                         delete!(l, i)
                     end
-                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
-                    l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                    @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}()
+                    l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                     @test_throws BoundsError delete!(l, n-1:2n)
                     @test_throws BoundsError delete!(l, 2n)
                 end
@@ -193,7 +193,7 @@
                 end
 
                 @testset "reverse" begin
-                    l2 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(n:-1:1...)
+                    l2 = TargetedLinkedList{Int,DoublyLinkedList{Int}}(n:-1:1...)
                     @test l == reverse(l2)
                 end
             end
@@ -202,12 +202,12 @@
         @testset "filter / show" begin
             for i = 1:n
                 @testset "filter" begin
-                    l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                    l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                     @test filter(x -> x % 2 == 0, l) == typeof(l)(2:2:n...)
                 end
 
                 @testset "show" begin
-                    l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                    l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                     io = IOBuffer()
                     @test sprint(io -> show(io, head(l))) == "$(typeof(head(l)))($(head(l).data))"
                     io1 = IOBuffer()
@@ -222,21 +222,21 @@
 
         @testset "insert / popat" begin
             @testset "insert" begin
-                l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                 @test_throws BoundsError insert!(l, 0, 0)
                 @test_throws BoundsError insert!(l, n+2, 0)
-                @test insert!(l, n+1, n+1) == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n+1...)
-                @test insert!(l, 1, 0) == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(0:n+1...)
-                @test insert!(l, n+2, -1) == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(0:n..., -1, n+1)
+                @test insert!(l, n+1, n+1) == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n+1...)
+                @test insert!(l, 1, 0) == TargetedLinkedList{Int,DoublyLinkedList{Int}}(0:n+1...)
+                @test insert!(l, n+2, -1) == TargetedLinkedList{Int,DoublyLinkedList{Int}}(0:n..., -1, n+1)
                 for i=n:-1:1
                     insert!(l, n+2, i)
                 end
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(0:n..., 1:n..., -1, n+1)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(0:n..., 1:n..., -1, n+1)
                 @test l.len == 2n + 3
             end
 
             @testset "popat" begin
-                l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                 @test_throws BoundsError popat!(l, 0)
                 @test_throws BoundsError popat!(l, n+1)
                 @test popat!(l, 0, missing) === missing
@@ -244,18 +244,18 @@
                 for i=2:n-1
                     @test popat!(l, 2) == i
                 end
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1,n)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1,n)
                 @test l.len == 2
 
-                l2 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                l2 = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                 for i=n-1:-1:2
                     @test popat!(l2, l2.len-1, 0) == i
                 end
-                @test l2 == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1,n)
+                @test l2 == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1,n)
                 @test l2.len == 2
                 @test popat!(l2, 1) == 1
                 @test popat!(l2, 1) == n
-                @test l2 == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+                @test l2 == TargetedLinkedList{Int,DoublyLinkedList{Int}}()
                 @test l2.len == 0
                 @test_throws BoundsError popat!(l2, 1)
             end
@@ -263,55 +263,55 @@
 
         @testset "splice" begin
             @testset "no replacement" begin
-                l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...)
+                l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:2n...)
                 @test splice!(l, n:1) == Int[]
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:2n...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:2n...)
                 @test collect(n+1:2n) == splice!(l, n+1:2n)
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
                 for i = n:-1:1
                     @test i == splice!(l, i)
                 end
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}()
                 @test_throws BoundsError splice!(l, 1)
                 
             end
             @testset "with replacement" begin
-                l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1)  
+                l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1)  
                 for i = 2:n
                     @test splice!(l, i-1:i-2, i) == Int[]
                     @test last(l) == i
                     @test l.len == i
                 end
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...,)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...,)
                 for i = 1:n
                     @test splice!(l, 1:0, i) == Int[]
                     @test first(l) == 1
                     @test l[2] == i
                     @test l.len == i + n
                 end
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1, n:-1:1..., 2:n...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(1, n:-1:1..., 2:n...)
                 previousdata = l[1:l.len]
                 for i = 1:2n
                     @test splice!(l, i, i+2n) == previousdata[i]
                     @test l[i] == i+2n
                 end
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(2n+1:4n...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(2n+1:4n...)
                 @test splice!(l, n+1:2n, [3n+1, 3n+2]) == [3n+1:4n...,]
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(2n+1:3n+2...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(2n+1:3n+2...)
                 @test l.len == n+2
                 for i=1:n+2
                     @test splice!(l, i, -i) == i+2n
                 end
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(-1:-1:-n-2...)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(-1:-1:-n-2...)
                 @test l.len == n+2
                 @test splice!(l, 1:n+2, 0) == collect(-1:-1:-n-2)
-                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(0)
+                @test l == TargetedLinkedList{Int,DoublyLinkedList{Int}}(0)
                 @test l.len == 1
             end
         end
 
         @testset "empty" begin
-            l = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}(1:n...)
+            l = TargetedLinkedList{Int,DoublyLinkedList{Int}}(1:n...)
             @test length(l) == n
             emptyl = empty(l)
             @test length(emptyl) == 0
@@ -436,7 +436,7 @@
     end
 
     @testset "random operations" begin
-        l1 = TargetedLinkedList{Int,DoublyLinkedList{Int},ListNode{Int,DoublyLinkedList{Int}}}()
+        l1 = TargetedLinkedList{Int,DoublyLinkedList{Int}}()
         l2 = TargetedLinkedList(l1)
         r1 = Int[]
         r2 = Int[]

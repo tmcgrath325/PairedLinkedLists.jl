@@ -29,8 +29,17 @@ Return the type of the nodes contained in the list.
 """
 nodetype(::Type{<:AbstractDoublyLinkedList{T}}) where T = ListNode{T,DoublyLinkedList{T}}
 nodetype(::Type{<:AbstractPairedLinkedList{T}}) where T = PairedListNode{T,PairedLinkedList{T}}
-nodetype(::Type{<:AbstractTargetedLinkedList{T,L,N}}) where {T,L,N} = TargetedListNode{T,L,N,TargetedLinkedList{T,L,N}}
+nodetype(::Type{<:AbstractTargetedLinkedList{T,R,N}}) where {T,R,N} = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}
 nodetype(l::AbstractList) = nodetype(typeof(l))
+
+"""
+    t = listtype(::AbstractNode)
+    t = listtype(::Type{<:AbstractNode})
+
+Return the type of list that can contain the provided type of node.
+"""
+listtype(::Type{<:AbstractNode{T,L}}) where {T,L} = L
+listtype(n::AbstractNode) = listtype(typeof(n))
 
 
 """
@@ -600,7 +609,7 @@ function addtarget!(node::N, target::N) where N <: Union{PairedListNode, PairedS
     return node
 end
 
-function addtarget!(list::TargetedLinkedList{T,L}, target::L) where {T,L}
+function addtarget!(list::TargetedLinkedList{T,R}, target::R) where {T,R}
     if hastarget(list)    # remove an existing target
         removetarget!(list)
     end
@@ -608,7 +617,7 @@ function addtarget!(list::TargetedLinkedList{T,L}, target::L) where {T,L}
     return list
 end
 
-function addtarget!(node::TargetedListNode{T,L,N}, target::N) where {T,L,N}
+function addtarget!(node::TargetedListNode{T,N,L}, target::N) where {T,N,L}
     node.list.target === target.list || throw(ArgumentError("The provided node must belong to the list being targeted."))
     if hastarget(node)    # remove an existing target
         removetarget!(node)
