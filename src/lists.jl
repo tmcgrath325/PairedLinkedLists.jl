@@ -371,7 +371,7 @@ end
 
 Remove `node` from the list to which it belongs, update the list's length, and return the node.
 """
-function deletenode!(node::Union{ListNode, TargetedListNode})
+function deletenode!(node::Union{ListNode, AbstractTargetedListNode})
     prev = node.prev
     next = node.next
     prev.next = next
@@ -379,7 +379,7 @@ function deletenode!(node::Union{ListNode, TargetedListNode})
     node.list.len -= 1
     return node
 end
-function deletenode!(node::PairedListNode)
+function deletenode!(node::AbstractPairedListNode)
     prev = node.prev
     next = node.next
     prev.next = next
@@ -571,7 +571,7 @@ end
 
 Return `true` if the provided node or list has a target, and false otherwise. 
 """
-hastarget(obj::Union{PairedListNode, TargetedListNode, PairedLinkedList, TargetedLinkedList, PairedSkipNode, PairedSkipList}) = (obj.target !== obj)
+hastarget(obj::Union{AbstractPairedListNode, AbstractTargetedListNode, AbstractPairedLinkedList, AbstractTargetedLinkedList, AbstractPairedSkipNode, AbstractPairedSkipList}) = (obj.target !== obj)
 hastarget(::Union{ListNode, DoublyLinkedList, SkipNode, SkipList}) = false
 
 """
@@ -584,7 +584,7 @@ If the first object is a `PairedListNode' or a 'PairedLinkedList' and either obj
 
 If the first object is a `TargetedListNode` or a `TargetedLinkedList`, the second object remains unchanged.
 """
-function addtarget!(list::L, target::L) where L <: Union{PairedLinkedList, PairedSkipList}
+function addtarget!(list::L, target::L) where L <: Union{AbstractPairedLinkedList, AbstractPairedSkipList}
     if hastarget(list)     # remove existing targets
         removetarget!(list)
     end
@@ -596,7 +596,7 @@ function addtarget!(list::L, target::L) where L <: Union{PairedLinkedList, Paire
     return list
 end
 
-function addtarget!(node::N, target::N) where N <: Union{PairedListNode, PairedSkipNode}
+function addtarget!(node::N, target::N) where N <: Union{AbstractPairedListNode, AbstractPairedSkipNode}
     node.list.target === target.list || throw(ArgumentError("The provided node must belong to paired list."))
     if hastarget(node)     # remove existing targets
         removetarget!(node)
@@ -609,7 +609,7 @@ function addtarget!(node::N, target::N) where N <: Union{PairedListNode, PairedS
     return node
 end
 
-function addtarget!(list::TargetedLinkedList{T,R}, target::R) where {T,R}
+function addtarget!(list::AbstractTargetedLinkedList{T,R}, target::R) where {T,R}
     if hastarget(list)    # remove an existing target
         removetarget!(list)
     end
@@ -617,7 +617,7 @@ function addtarget!(list::TargetedLinkedList{T,R}, target::R) where {T,R}
     return list
 end
 
-function addtarget!(node::TargetedListNode{T,N,L}, target::N) where {T,N,L}
+function addtarget!(node::AbstractTargetedListNode{T,N,L}, target::N) where {T,N,L}
     node.list.target === target.list || throw(ArgumentError("The provided node must belong to the list being targeted."))
     if hastarget(node)    # remove an existing target
         removetarget!(node)
@@ -635,7 +635,7 @@ If the object is a `PairedListNode` or `PairedLinkedList`, the link will be dele
 
 If the object is a `TargetedListNode` or `PairedLinkedList`, the link will be deleted from only the object.
 """
-function removetarget!(node::Union{PairedListNode, PairedSkipNode})
+function removetarget!(node::Union{AbstractPairedListNode, AbstractPairedSkipNode})
     if hastarget(node)
         target = node.target
         node.target = node
@@ -643,15 +643,15 @@ function removetarget!(node::Union{PairedListNode, PairedSkipNode})
     end
     return node
 end
-function removetarget!(node::TargetedListNode)
+function removetarget!(node::AbstractTargetedListNode)
     if hastarget(node)
         node.target = node
     end
     return node
 end
-removetarget!(node::ListNode) = node;
+removetarget!(node::AbstractListNode) = node;
 
-function removetarget!(list::Union{PairedLinkedList, PairedSkipList})
+function removetarget!(list::Union{AbstractPairedLinkedList, AbstractPairedSkipList})
     if hastarget(list)
         target = list.target
         list.target = list
@@ -662,7 +662,7 @@ function removetarget!(list::Union{PairedLinkedList, PairedSkipList})
     end
     return list
 end
-function removetarget!(list::TargetedLinkedList)
+function removetarget!(list::AbstractTargetedLinkedList)
     if hastarget(list)
         list.target = list
         for node in ListNodeIterator(list)
@@ -671,10 +671,9 @@ function removetarget!(list::TargetedLinkedList)
     end
     return list
 end
-removetarget!(list::DoublyLinkedList) = list;
 
 
-function removetarget!(l::Union{PairedLinkedList,TargetedLinkedList,PairedSkipList}, idx::Int)
+function removetarget!(l::Union{AbstractPairedLinkedList,AbstractTargetedLinkedList,AbstractPairedSkipList}, idx::Int)
     node = getnode(l, idx)
     return removetarget!(node)
 end

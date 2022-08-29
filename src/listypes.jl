@@ -1,6 +1,11 @@
 abstract type AbstractNode{T,L} end 
+
 abstract type AbstractListNode{T,L} <: AbstractNode{T,L} end
+abstract type AbstractPairedListNode{T,L} <: AbstractListNode{T,L} end
+abstract type AbstractTargetedListNode{T,N,L} <: AbstractListNode{T,L} end
+
 abstract type AbstractSkipNode{T,L} <: AbstractNode{T,L} end
+abstract type AbstractPairedSkipNode{T,L} <: AbstractSkipNode{T,L} end
 
 abstract type AbstractList{T} end
 
@@ -53,7 +58,7 @@ of its parent `list`.
 
 The `target` link is assumed to be reciprocated for a `PairedListNode`. For example, `node === node.target.target` should be `true`.
 """
-mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractListNode{T,L}
+mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractPairedListNode{T,L}
     list::L
     data::T
     prev::PairedListNode{T,L}
@@ -95,7 +100,7 @@ of its parent `list`.
 
 Unlike a `PairedListNode`, the `target` link for a `TargetListNode` is not assumed to be reciprocated.
 """
-mutable struct TargetedListNode{T,N<:AbstractNode{T},L<:AbstractList{T}} <: AbstractListNode{T,L}
+mutable struct TargetedListNode{T,N<:AbstractNode{T},L<:AbstractList{T}} <: AbstractTargetedListNode{T,N,L}
     list::L
     data::T
     prev::TargetedListNode{T,N,L}
@@ -300,7 +305,7 @@ of its parent list.
 
 The `target` link is intended to be reciprocated for a `PairedSkipNode`. For example, `node === node.target.target` should be `true`.
 """
-mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractSkipNode{T,L}
+mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractPairedSkipNode{T,L}
     list::L
     data::T
     prev::PairedSkipNode{T,L}
