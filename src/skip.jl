@@ -89,7 +89,7 @@ Base.push!(l::AbstractSkipLinkedList{T}, data::T) where T = push!(l, newnode(l,d
 
 function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}) where T
     data = bottomnode.data
-    left = search(l, bottomnode)
+    left = search(l, data)
     insertafter!(bottomnode, left[1])
     if left[1] === l.head
         if l.nlevels === 1
