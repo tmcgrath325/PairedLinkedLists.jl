@@ -85,9 +85,11 @@ function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
     return node
 end
 
-function Base.push!(l::AbstractSkipLinkedList{T}, data::T) where T
+Base.push!(l::AbstractSkipLinkedList{T}, data::T) = push!(l, newnode(l,data))
+
+function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}) where T
     left = search(l, data)
-    bottomnode = insertafter!(newnode(l,data), left[1])
+    insertafter!(bottomnode, left[1])
     if left[1] === l.head
         if l.nlevels === 1
            l.top = bottomnode 
@@ -141,8 +143,8 @@ function deletenode!(node::AbstractSkipNode)
                 node.list.top = node.list.head
             else
                 node.down.up = node.down
-                node.toptail = node.toptail.down
-                node.toptail.up = node.toptail
+                node.list.toptail = node.list.toptail.down
+                node.list.toptail.up = node.list.toptail
                 node.list.nlevels -= 1
             end
         else
@@ -167,8 +169,8 @@ function deletenode!(node::PairedSkipNode)
                 node.list.top = node.list.head
             else
                 node.down.up = node.down
-                node.toptail = node.toptail.down
-                node.toptail.up = node.toptail
+                node.list.toptail = node.list.toptail.down
+                node.list.toptail.up = node.list.toptail
                 node.list.nlevels -= 1
             end
         else

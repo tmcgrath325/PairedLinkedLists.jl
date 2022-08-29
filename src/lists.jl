@@ -27,9 +27,9 @@ tail(l::AbstractList) = l.len < 1 ? throw(ArgumentError("List must be non-empty"
 
 Return the type of the nodes contained in the list.
 """
-nodetype(::Type{<:AbstractDoublyLinkedList{T}}) where T = ListNode{T,DoublyLinkedList{T}}
-nodetype(::Type{<:AbstractPairedLinkedList{T}}) where T = PairedListNode{T,PairedLinkedList{T}}
-nodetype(::Type{<:AbstractTargetedLinkedList{T,R,N}}) where {T,R,N} = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}
+nodetype(::Type{<:DoublyLinkedList{T}}) where T = ListNode{T,DoublyLinkedList{T}}
+nodetype(::Type{<:PairedLinkedList{T}}) where T = PairedListNode{T,PairedLinkedList{T}}
+nodetype(::Type{<:TargetedLinkedList{T,R,N}}) where {T,R,N} = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}
 nodetype(l::AbstractList) = nodetype(typeof(l))
 
 """

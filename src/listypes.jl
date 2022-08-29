@@ -339,7 +339,7 @@ mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
     tail::SkipNode{T, SkipList{T,F}}
     top::SkipNode{T, SkipList{T,F}}
     toptail::SkipNode{T, SkipList{T,F}}
-    function SkipList{T}(;sortedby::F=identity, skipfactor::Int=2) where {T,F<:Function}
+    function SkipList{T,F}(;sortedby::F=identity, skipfactor::Int=2) where {T,F<:Function}
         l = new{T,F}(0,1,skipfactor,sortedby)
         l.head = SkipNode{T,SkipList{T,F}}(l)
         l.tail = SkipNode{T,SkipList{T,F}}(l)
@@ -354,6 +354,14 @@ mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
         l.toptail.prev = l.top
         return l
     end
+end
+
+function SkipList{T,F}(elts...) where {T,F}
+    l = SkipList{T,F}()
+    for elt in elts
+        push!(l, elt)
+    end
+    return l
 end
 
 """
@@ -378,7 +386,7 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
     tail::PairedSkipNode{T, PairedSkipList{T,F}}
     top::PairedSkipNode{T, PairedSkipList{T,F}}
     toptail::PairedSkipNode{T, PairedSkipList{T,F}}
-    function PairedSkipList{T}(;sortedby::F=identity, skipfactor::Int=2) where {T,F<:Function}
+    function PairedSkipList{T,F}(;sortedby::F=identity, skipfactor::Int=2) where {T,F<:Function}
         l = new{T,F}(0,1,skipfactor,sortedby)
         l.target = l
         l.head = PairedSkipNode{T,PairedSkipList{T,F}}(l)
@@ -394,7 +402,7 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.toptail.prev = l.top
         return l
     end
-    function PairedSkipList{T}(target::PairedSkipList{T}; sortedby::F=identity, skipfactor::Int=2) where {T,F<:Function}
+    function PairedSkipList{T,F}(target::PairedSkipList{T}; sortedby::F=identity, skipfactor::Int=2) where {T,F<:Function}
         l = new{T,F}(0,1,skipfactor,sortedby,target)
         l.head = PairedSkipNode{T,PairedSkipList{T,F}}(l)
         l.tail = PairedSkipNode{T,PairedSkipList{T,F}}(l)
@@ -409,6 +417,14 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.toptail.prev = l.top
         return l
     end
+end
+
+function PairedSkipList{T,F}(elts...) where {T,F}
+    l = PairedSkipList{T,F}()
+    for elt in elts
+        push!(l, elt)
+    end
+    return l
 end
 
 function Base.show(io::IO, node::AbstractNode)
