@@ -85,7 +85,7 @@ function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
     return node
 end
 
-Base.push!(l::AbstractSkipLinkedList{T}, data::T) = push!(l, newnode(l,data))
+Base.push!(l::AbstractSkipLinkedList{T}, data::T) where T = push!(l, newnode(l,data))
 
 function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}) where T
     left = search(l, data)
