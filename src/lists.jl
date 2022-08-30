@@ -218,7 +218,7 @@ function Base.copy!(l2::L, l::L) where L <: Union{DoublyLinkedList, TargetedLink
     end
     return l2
 end
-function Base.copy(l::L) where L <: Union{DoublyLinkedList, TargetedLinkedList}
+function Base.copy(l::L) where L <: Union{DoublyLinkedList, SkipList, TargetedLinkedList}
     l2 = L()
     hastarget(l) && addtarget!(l2, l.target)
     for n in ListNodeIterator(l)
@@ -250,23 +250,25 @@ function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
         l2.tail.prev = existingnode
         l2.len = l.len
     end
-    existingnode = target2.head
-    for (i,n) in enumerate(ListNodeIterator(l.target))
-        if i<=plen
-            existingnode = existingnode.next
-            existingnode.data = n.data
-        else
-            push!(target2, n.data)
+    if hastarget(l2)
+        existingnode = target2.head
+        for (i,n) in enumerate(ListNodeIterator(l.target))
+            if i<=plen
+                existingnode = existingnode.next
+                existingnode.data = n.data
+            else
+                push!(target2, n.data)
+            end
+            if hastarget(n)
+                targetidx = getfirst(x->n===x[2], targetmap)[1]
+                addtarget!(getnode(l2, targetidx), i<=plen ? existingnode : tail(target2))
+            end
         end
-        if hastarget(n)
-            targetidx = getfirst(x->n===x[2], targetmap)[1]
-            addtarget!(getnode(l2, targetidx), i<=plen ? existingnode : tail(target2))
+        if l.target.len < plen 
+            existingnode.next = target2.tail
+            target2.tail.prev = existingnode
+            target2.len = l.target.len
         end
-    end
-    if l.target.len < plen 
-        existingnode.next = target2.tail
-        target2.tail.prev = existingnode
-        target2.len = l.target.len
     end
     return l2
 end
@@ -302,7 +304,7 @@ function Base.empty!(l::AbstractLinkedList)
     l.len = 0
     return l
 end
-Base.empty(l::AbstractLinkedList) = empty!(copy(l))
+Base.empty(::L) where L <: AbstractList = L()
 
 """
     node = getnode(l::AbstractList, index)
@@ -671,7 +673,6 @@ function removetarget!(list::AbstractTargetedLinkedList)
     end
     return list
 end
-
 
 function removetarget!(l::Union{AbstractPairedLinkedList,AbstractTargetedLinkedList,AbstractPairedSkipList}, idx::Int)
     node = getnode(l, idx)

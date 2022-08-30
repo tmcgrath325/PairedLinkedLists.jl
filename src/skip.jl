@@ -5,7 +5,8 @@ attop(n::AbstractSkipNode) = n.up === n
 atbottom(n::AbstractSkipNode) = n.down === n
 
 function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,F}
-    l = SkipList{T}(;sortedby=sortedby, skipfactor=skipfactor)
+    l = SkipList{T,F}(skipfactor, sortedby)
+    length(elts) === 0 && return l
     nlevels = Int(ceil(log(skipfactor, max(length(elts),skipfactor))))
     l.nlevels = nlevels
 
@@ -205,3 +206,20 @@ function Base.popfirst!(l::AbstractSkipList)
     return node.data
 end
 
+function Base.empty!(l::AbstractSkipList)
+    if hastarget(l)
+        # remove all of the inter-list links
+        target = l.target
+        removetarget!(l)
+        addtarget!(l, target)
+    end
+    
+    l.head.next = l.tail
+    l.tail.prev = l.head
+    l.tail.top = l.tail
+    l.top = l.head
+    l.tailtop = l.tail
+    l.len = 0
+    l.nlevels = 1
+    return l
+end
