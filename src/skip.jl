@@ -50,14 +50,23 @@ function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,
     return l
 end
 
+# this function similar to insertafter!, but does not modify the length of the list, making it appropriate for skip nodes not on the bottom row.
+function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
+    node.list === prev.list || throw(ArgumentError("The nodes must have the same parent list."))
+    next = prev.next
+    node.prev = prev
+    node.next = next
+    prev.next = node
+    next.prev = node
+    return node
+end
+
 function search(l::AbstractSkipLinkedList{T}, data::T) where T
     sdata = l.sortedby(data)
-    left = Vector{nodetype(l)}(undef, l.nlevels)
     rn = getfirst(x -> l.sortedby(x.data) > sdata, l.top)
     rn = isnothing(rn) ? l.toptail : rn
     ln = rn.prev
-    left[end] = ln
-    for level = l.nlevels-1:-1:1
+    for i = l.nlevels-1:-1:1
         ln = ln.down
         rn = rn.down
         for n in ln
@@ -70,31 +79,83 @@ function search(l::AbstractSkipLinkedList{T}, data::T) where T
                 break
             end
         end
-        left[level] = ln
     end
-    return left
+    return ln
 end
 
-# this function similar to insertafter!, but does not modify the length of the list, making it appropriate for skip nodes not on the bottom row.
-function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
-    node.list === prev.list || throw(ArgumentError("The nodes must have the same parent list."))
-    next = prev.next
-    node.prev = prev
-    node.next = next
-    prev.next = node
-    next.prev = node
-    return node
+function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}, level::Int) where T
+    data = bottomnode.data
+    sdata = l.sortedby(data)
+    rn = getfirst(x -> l.sortedby(x.data) > sdata, l.top)
+    rn = isnothing(rn) ? l.toptail : rn
+    ln = rn.prev
+    abovenode = l.head
+    if level === l.nlevels 
+        abovenode = level === 1 ? insertafter!(bottomnode, ln) : insertskipafter!(newnode(l,data), ln)
+    end
+    for lvl = l.nlevels-1:-1:1
+        ln = ln.down
+        rn = rn.down
+        for n in ln
+            if l.sortedby(n.data) > sdata
+                ln = n.prev
+                rn = n
+                break
+            elseif n.next === rn
+                ln = n
+                break
+            end
+        end
+        if lvl <= level
+            node = lvl === 1 ? insertafter!(bottomnode, ln) : insertskipafter!(newnode(l,data), ln)
+            if abovenode !== l.head 
+                node.up = abovenode
+                abovenode.down = node
+            end
+            abovenode = node
+        end
+    end
+    return ln
+end
+
+# add a new row to the top of the skip list
+function addlevel!(l::AbstractSkipLinkedList)
+    l.nlevels += 1
+    top = newnode(l, l.top.data)
+    top.down = l.top
+    l.top.up = top
+    toptail = nodetype(l)(l)
+    toptail.down = l.toptail
+    l.toptail.up = toptail
+    top.next = toptail
+    toptail.prev = top
+    l.top = top
+    l.toptail = toptail
+    return l
+end
+
+# generate a random level at which to insert a new node
+function randomlevel(max::Int, skipfactor::Int)
+    level = 1
+    for i=2:max
+        rand() > 1 / skipfactor && break 
+        level += 1
+    end
+    return level
 end
 
 Base.push!(l::AbstractSkipLinkedList{T}, data::T) where T = push!(l, newnode(l,data))
 
 function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}) where T
     data = bottomnode.data
-    left = search(l, data)
-    insertafter!(bottomnode, left[1])
-    if left[1] === l.head
+    sdata = l.sortedby(data)
+    if l.len === 0
+        insertafter!(bottomnode, l.head)
+        return l
+    elseif sdata < l.sortedby(first(l))
+        insertafter!(bottomnode, l.head)
         if l.nlevels === 1
-           l.top = bottomnode 
+            l.top = bottomnode 
         else
             node = l.top
             for i=1:l.nlevels-1
@@ -106,25 +167,9 @@ function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T
             node.up = node
         end
         return l
-    elseif l.len > l.skipfactor ^ l.nlevels
-        l.nlevels += 1
-        top = newnode(l, l.top.data)
-        top.down = l.top
-        l.top.up = top
-        toptail = nodetype(l)(l)
-        toptail.down = l.toptail
-        l.toptail.up = toptail
-        top.next = toptail
-        toptail.prev = top
-        l.top = top
-        l.toptail = toptail
-    end
-    for i=2:length(left)
-        rand() > 1 / l.skipfactor && break 
-        node = insertskipafter!(newnode(l,data), left[i])
-        node.down = bottomnode
-        bottomnode.up = node
-        bottomnode = node
+    else
+        (l.len > l.skipfactor ^ l.nlevels) && addlevel!(l)
+        searchinsert!(l, bottomnode, randomlevel(l.nlevels, l.skipfactor))
     end
     return l
 end
