@@ -443,13 +443,6 @@
         p = Int[]
         m = 100
 
-        # here for Julia 1.0 compatibility
-        function popat!(a::Vector, i::Int64)
-            val = a[i]
-            deleteat!(a, i)
-            return val
-        end
-
         for k = 1 : m
             la = rand(2:20)
             x = rand(1:1000, la)

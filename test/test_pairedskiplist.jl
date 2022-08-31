@@ -1,7 +1,7 @@
-@testset "SkipList" begin
+@testset "PairedSkipList" begin
 
     @testset "empty list" begin
-        l1 = SkipList{Int}()
+        l1 = PairedSkipList{Int}()
         @test iterate(l1) === nothing
         @test isempty(l1)
         @test length(l1) == 0
@@ -20,7 +20,7 @@
         n = 10
 
         @testset "iterate" begin
-            l = SkipList{Int}(1:n...)
+            l = PairedSkipList{Int}(1:n...)
 
             @testset "data" begin
                 for (i,data) in enumerate(l)
@@ -60,8 +60,8 @@
         end
 
         @testset "push back / pop back" begin
-            l = SkipList{Int}()
-            dummy_list = SkipList{Int}()
+            l = PairedSkipList{Int}()
+            dummy_list = PairedSkipList{Int}()
             @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
@@ -77,10 +77,10 @@
                         @test j == k
                     end
                     if i > 3
-                        l1 = SkipList{Int32}(1:i...)
+                        l1 = PairedSkipList{Int32}(1:i...)
                         io = IOBuffer()
-                        @test sprint(io -> show(io, iterate(l1))) == "(1, SkipNode{Int32, SkipList{Int32, typeof(identity)}}(2))"
-                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, SkipNode{Int32, SkipList{Int32, typeof(identity)}}(3))"
+                        @test sprint(io -> show(io, iterate(l1))) == "(1, SkipNode{Int32, PairedSkipList{Int32, typeof(identity)}}(2))"
+                        @test sprint(io -> show(io, iterate(l1, l1.head.next.next))) == "(2, SkipNode{Int32, PairedSkipList{Int32, typeof(identity)}}(3))"
                     end
                     cl = collect(l)
                     @test isa(cl, Vector{Int})
@@ -90,7 +90,7 @@
         end
 
         @testset "pop front" begin
-            l = SkipList{Int}()
+            l = PairedSkipList{Int}()
 
             @testset "push front" begin
                 for i = n:-1:1
@@ -119,16 +119,16 @@
 
         @testset "delete / copy" begin
             for i = 1:n
-                l = SkipList{Int}(1:2n...)
+                l = PairedSkipList{Int}(1:2n...)
 
                 @testset "delete" begin
                     delete!(l, n+1:2n)
-                    @test l == SkipList{Int}(1:n...)
+                    @test l == PairedSkipList{Int}(1:n...)
                     for i = n:-1:1
                         delete!(l, i)
                     end
-                    @test l == SkipList{Int}()
-                    l = SkipList{Int}(1:n...)
+                    @test l == PairedSkipList{Int}()
+                    l = PairedSkipList{Int}(1:n...)
                     @test_throws BoundsError delete!(l, n-1:2n)
                     @test_throws BoundsError delete!(l, 2n)
                 end
@@ -142,11 +142,11 @@
 
         @testset "show" begin
             for i = 1:n
-                l = SkipList{Int32}(1:n...)
+                l = PairedSkipList{Int32}(1:n...)
                 io = IOBuffer()
                 @test sprint(io -> show(io, l.head.next)) == "$(typeof(l.head.next))($(l.head.next.data))"
                 io1 = IOBuffer()
-                write(io1, "SkipList{Int32, typeof(identity)}(");
+                write(io1, "PairedSkipList{Int32, typeof(identity)}(");
                 write(io1, join(l, ", "));
                 write(io1, ")")
                 seekstart(io1)
@@ -156,7 +156,7 @@
 
         @testset "popat" begin
             for i=1:n
-                l = SkipList{Int}(1:n...)
+                l = PairedSkipList{Int}(1:n...)
                 @test_throws BoundsError popat!(l, 0)
                 @test_throws BoundsError popat!(l, n+1)
                 @test popat!(l, 0, missing) === missing
@@ -164,25 +164,25 @@
                 for i=2:n-1
                     @test popat!(l, 2) == i
                 end
-                @test l == SkipList{Int}(1,n)
+                @test l == PairedSkipList{Int}(1,n)
                 @test l.len == 2
 
-                l2 = SkipList{Int}(1:n...)
+                l2 = PairedSkipList{Int}(1:n...)
                 for i=n-1:-1:2
                     @test popat!(l2, l2.len-1, 0) == i
                 end
-                @test l2 == SkipList{Int}(1,n)
+                @test l2 == PairedSkipList{Int}(1,n)
                 @test l2.len == 2
                 @test popat!(l2, 1) == 1
                 @test popat!(l2, 1) == n
-                @test l2 == SkipList{Int}()
+                @test l2 == PairedSkipList{Int}()
                 @test l2.len == 0
                 @test_throws BoundsError popat!(l2, 1)
             end
         end
 
         @testset "empty" begin
-            l = SkipList{Int}(1:n...)
+            l = PairedSkipList{Int}(1:n...)
             @test length(l) == n
             emptyl = empty(l)
             @test length(emptyl) == 0
@@ -194,7 +194,7 @@
     end
 
     @testset "random operations" begin
-        l = SkipList{Int}()
+        l = PairedSkipList{Int}()
         r = Int[]
         m = 100
 

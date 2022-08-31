@@ -356,6 +356,14 @@ mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
     end
 end
 
+function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,F}
+    l = SkipList{T,F}(skipfactor, sortedby)
+    for elt in elts
+        push!(l, elt)
+    end
+    return l
+end
+
 """
     l = PairedSkipList{::Type}()
     l = PairedSkipList{::Type}(elts...)
@@ -378,7 +386,7 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
     tail::PairedSkipNode{T, PairedSkipList{T,F}}
     top::PairedSkipNode{T, PairedSkipList{T,F}}
     toptail::PairedSkipNode{T, PairedSkipList{T,F}}
-    function PairedSkipList{T,F}(;sortedby::F=identity, skipfactor::Int=2) where {T,F<:Function}
+    function PairedSkipList{T,F}(skipfactor::Int=2, sortedby::F=identity) where {T,F<:Function}
         l = new{T,F}(0,1,skipfactor,sortedby)
         l.target = l
         l.head = PairedSkipNode{T,PairedSkipList{T,F}}(l)
@@ -394,7 +402,7 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.toptail.prev = l.top
         return l
     end
-    function PairedSkipList{T,F}(target::PairedSkipList{T}; sortedby::F=identity, skipfactor::Int=2) where {T,F<:Function}
+    function PairedSkipList{T,F}(target::PairedSkipList{T}, skipfactor::Int=2, sortedby::F=identity) where {T,F<:Function}
         l = new{T,F}(0,1,skipfactor,sortedby,target)
         l.head = PairedSkipNode{T,PairedSkipList{T,F}}(l)
         l.tail = PairedSkipNode{T,PairedSkipList{T,F}}(l)
@@ -409,6 +417,14 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.toptail.prev = l.top
         return l
     end
+end
+
+function PairedSkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,F}
+    l = PairedSkipList{T,F}(skipfactor, sortedby)
+    for elt in elts
+        push!(l, elt)
+    end
+    return l
 end
 
 function Base.show(io::IO, node::AbstractNode)

@@ -468,17 +468,15 @@ function Base.pushfirst!(l::AbstractLinkedList, data)
     return l
 end
 
-function Base.pop!(l::AbstractLinkedList)
+function Base.pop!(l::AbstractList)
     isempty(l) && throw(ArgumentError("List must be non-empty"))
-    node = tail(l)
-    deletenode!(node)
+    node = deletenode!(tail(l))
     return node.data
 end
 
-function Base.popfirst!(l::AbstractLinkedList)
+function Base.popfirst!(l::AbstractList)
     isempty(l) && throw(ArgumentError("List must be non-empty"))
-    node = head(l)
-    deletenode!(node)
+    node = deletenode!(head(l))
     return node.data
 end
 
@@ -486,14 +484,13 @@ if isdefined(Base, :popat!)  # We will overload if it is defined, else we define
     import Base: popat!
 end
 
-function popat!(l::AbstractLinkedList, idx::Int)
+function popat!(l::AbstractList, idx::Int)
     @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
-    node = getnode(l, idx)
-    deletenode!(node)
+    node = deletenode!(getnode(l, idx))
     return node.data
 end
 
-function popat!(l::AbstractLinkedList, idx::Int, default)
+function popat!(l::AbstractList, idx::Int, default)
     if !(0 < idx <= l.len) 
         return default;
     end

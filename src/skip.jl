@@ -4,51 +4,51 @@ nodetype(::Type{<:AbstractPairedSkipList{T,F}}) where {T,F} = PairedSkipNode{T,P
 attop(n::AbstractSkipNode) = n.up === n
 atbottom(n::AbstractSkipNode) = n.down === n
 
-function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,F}
-    l = SkipList{T,F}(skipfactor, sortedby)
-    length(elts) === 0 && return l
-    nlevels = Int(ceil(log(skipfactor, max(length(elts),skipfactor))))
-    l.nlevels = nlevels
+# function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,F}
+#     l = SkipList{T,F}(skipfactor, sortedby)
+#     length(elts) === 0 && return l
+#     nlevels = Int(ceil(log(skipfactor, max(length(elts),skipfactor))))
+#     l.nlevels = nlevels
 
-    sortedelts = sort(T[elts...]; by=sortedby)
-    left = insertafter!(newnode(l, first(sortedelts)), l.head)
-    right = l.tail
-    currentnodes = [left]
-    for i=2:nlevels
-        aboveleft = newnode(l, first(sortedelts))
-        left.up = aboveleft
-        aboveleft.down = left
+#     sortedelts = sort(T[elts...]; by=sortedby)
+#     left = insertafter!(newnode(l, first(sortedelts)), l.head)
+#     right = l.tail
+#     currentnodes = [left]
+#     for i=2:nlevels
+#         aboveleft = newnode(l, first(sortedelts))
+#         left.up = aboveleft
+#         aboveleft.down = left
 
-        aboveright = SkipNode{T,SkipList{T,F}}(l)
-        right.up = aboveright
-        aboveright.down = right
+#         aboveright = SkipNode{T,SkipList{T,F}}(l)
+#         right.up = aboveright
+#         aboveright.down = right
 
-        left = aboveleft
-        right = aboveright
-        left.next = right
-        right.prev = left
+#         left = aboveleft
+#         right = aboveright
+#         left.next = right
+#         right.prev = left
 
-        push!(currentnodes, left)
-    end
-    l.top = left
-    l.toptail = right
+#         push!(currentnodes, left)
+#     end
+#     l.top = left
+#     l.toptail = right
 
-    spacings = [skipfactor^x for x in 0:nlevels-1]
-    for i=2:length(sortedelts)
-        for j=1:nlevels
-            if j === 1 
-                currentnodes[j] = insertafter!(newnode(l,sortedelts[i]), currentnodes[j])
-            elseif i % spacings[j] === 1
-                currentnodes[j] = insertskipafter!(newnode(l,sortedelts[i]), currentnodes[j])
-                currentnodes[j].down = currentnodes[j-1]
-                currentnodes[j-1].up = currentnodes[j]
-            else
-                break
-            end
-        end
-    end
-    return l
-end
+#     spacings = [skipfactor^x for x in 0:nlevels-1]
+#     for i=2:length(sortedelts)
+#         for j=1:nlevels
+#             if j === 1 
+#                 currentnodes[j] = insertafter!(newnode(l,sortedelts[i]), currentnodes[j])
+#             elseif i % spacings[j] === 1
+#                 currentnodes[j] = insertskipafter!(newnode(l,sortedelts[i]), currentnodes[j])
+#                 currentnodes[j].down = currentnodes[j-1]
+#                 currentnodes[j-1].up = currentnodes[j]
+#             else
+#                 break
+#             end
+#         end
+#     end
+#     return l
+# end    
 
 # this function similar to insertafter!, but does not modify the length of the list, making it appropriate for skip nodes not on the bottom row.
 function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
@@ -86,7 +86,7 @@ end
 function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}, level::Int) where T
     data = bottomnode.data
     sdata = l.sortedby(data)
-    rn = getfirst(x -> l.sortedby(x.data) > sdata, l.top)
+    rn = getfirst(x -> l.sortedby(x.data) > sdata, l.nlevels > 1 ? l.top : l.head.next)
     rn = isnothing(rn) ? l.toptail : rn
     ln = rn.prev
     abovenode = l.head
@@ -94,6 +94,7 @@ function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNod
         abovenode = level === 1 ? insertafter!(bottomnode, ln) : insertskipafter!(newnode(l,data), ln)
     end
     for lvl = l.nlevels-1:-1:1
+        @assert !atbottom(ln)
         ln = ln.down
         rn = rn.down
         for n in ln
@@ -122,7 +123,7 @@ end
 function addlevel!(l::AbstractSkipLinkedList)
     l.nlevels += 1
     top = newnode(l, l.top.data)
-    top.down = l.top
+    top.down = l.nlevels === 2 ? head(l) : l.top
     l.top.up = top
     toptail = nodetype(l)(l)
     toptail.down = l.toptail
@@ -144,13 +145,14 @@ function randomlevel(max::Int, skipfactor::Int)
     return level
 end
 
-Base.push!(l::AbstractSkipLinkedList{T}, data::T) where T = push!(l, newnode(l,data))
+Base.push!(l::AbstractSkipLinkedList{T}, data) where T = push!(l, newnode(l,data))
 
 function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}) where T
     data = bottomnode.data
     sdata = l.sortedby(data)
     if l.len === 0
         insertafter!(bottomnode, l.head)
+        l.top = head(l)
         return l
     elseif sdata < l.sortedby(first(l))
         insertafter!(bottomnode, l.head)
@@ -182,14 +184,50 @@ Remove `node` from the list to which it belongs, update the list's length, and r
 The node can be at any level of the skip list, and all nodes directly above or below will also be removed.
 """
 function deletenode!(node::AbstractSkipNode)
+    l = node.list
+    # handle deletion of the first node in the bottom list
+    if node === head(l)
+        # remove the provided node
+        next = node.next
+        prev = node.prev
+        prev.next = next
+        next.prev = prev
+        l.len -= 1
+        if l.nlevels === 1              # if there is only a single level, all that remains is to update the "top"
+            l.top = l.len === 0 ? l.head : head(l)             
+        else                            # otherwise, adjust the first node for each level
+            oldlevelhead = node
+            currentnode = next
+            prevnode = next
+            for i=2:l.nlevels
+                @assert !attop(oldlevelhead)
+                oldlevelhead = oldlevelhead.up
+                if attop(currentnode)               # if the node from the previous level has no node above, use the node at the head of the level
+                    currentnode = oldlevelhead
+                    currentnode.down = prevnode
+                    prevnode.up = currentnode
+                else                                # if the node from the previous level already has a node above, make it the head of the level
+                    currentnode = currentnode.up
+                    currentnode.prev = currentnode
+                end
+                currentnode.data = next.data
+                prevnode = currentnode
+            end
+            l.top = currentnode
+        end
+        return node
+    end
+
+    # handle deletion of any other node
     if !attop(node)
         deletenode!(node.up)
     elseif athead(node)
         if node.next == node.list.toptail
             if atbottom(node)
                 node.list.top = node.list.head
-            else
-                node.down.up = node.down
+            else # remove an entire level
+                node.list.top = node.down
+                node.list.top.up = node.list.top
                 node.list.toptail = node.list.toptail.down
                 node.list.toptail.up = node.list.toptail
                 node.list.nlevels -= 1
@@ -207,48 +245,33 @@ function deletenode!(node::AbstractSkipNode)
     end
     return node
 end
-function deletenode!(node::PairedSkipNode)
-    if !attop(node)
-        deletenode!(node.up)
-    elseif athead(node)
-        if node.next == node.list.toptail
-            if atbottom(node)
-                node.list.top = node.list.head
-            else
-                node.down.up = node.down
-                node.list.toptail = node.list.toptail.down
-                node.list.toptail.up = node.list.toptail
-                node.list.nlevels -= 1
-            end
-        else
-            node.list.top = node.next
-        end
-    end
-    prev = node.prev
-    next = node.next
-    prev.next = next
-    next.prev = prev
-    if atbottom(node) 
-        node.list.len -= 1
-    end
+function deletenode!(node::AbstractPairedSkipNode)
     hastarget(node) && removetarget!(node)
+    if !attop(node)
+        deletenode!(node.up)
+    elseif athead(node)
+        if node.next == node.list.toptail
+            if atbottom(node)
+                node.list.top = node.list.head
+            else # remove an entire level
+                node.list.top = node.down
+                node.down.up = node.down
+                node.list.toptail = node.list.toptail.down
+                node.list.toptail.up = node.list.toptail
+                node.list.nlevels -= 1
+            end
+        else
+            node.list.top = node.next
+        end
+    end
+    prev = node.prev
+    next = node.next
+    prev.next = next
+    next.prev = prev
+    if atbottom(node) 
+        node.list.len -= 1
+    end
     return node
-end
-
-
-function Base.pop!(l::AbstractSkipList)
-    isempty(l) && throw(ArgumentError("List must be non-empty"))
-    node = tail(l)
-    data = node.data
-    deletenode!(node)
-    return data
-end
-
-function Base.popfirst!(l::AbstractSkipList)
-    isempty(l) && throw(ArgumentError("List must be non-empty"))
-    node = head(l)
-    deletenode!(node)
-    return node.data
 end
 
 function Base.empty!(l::AbstractSkipList)
@@ -261,9 +284,9 @@ function Base.empty!(l::AbstractSkipList)
     
     l.head.next = l.tail
     l.tail.prev = l.head
-    l.tail.top = l.tail
+    l.tail.up = l.tail
     l.top = l.head
-    l.tailtop = l.tail
+    l.toptail = l.tail
     l.len = 0
     l.nlevels = 1
     return l
