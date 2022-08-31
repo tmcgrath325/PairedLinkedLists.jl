@@ -185,6 +185,7 @@ The node can be at any level of the skip list, and all nodes directly above or b
 """
 function deletenode!(node::AbstractSkipNode)
     l = node.list
+    hastarget(node) && removetarget!(node.target)
     # handle deletion of the first node in the bottom list
     if node === head(l)
         # remove the provided node
@@ -245,36 +246,8 @@ function deletenode!(node::AbstractSkipNode)
     end
     return node
 end
-function deletenode!(node::AbstractPairedSkipNode)
-    hastarget(node) && removetarget!(node)
-    if !attop(node)
-        deletenode!(node.up)
-    elseif athead(node)
-        if node.next == node.list.toptail
-            if atbottom(node)
-                node.list.top = node.list.head
-            else # remove an entire level
-                node.list.top = node.down
-                node.down.up = node.down
-                node.list.toptail = node.list.toptail.down
-                node.list.toptail.up = node.list.toptail
-                node.list.nlevels -= 1
-            end
-        else
-            node.list.top = node.next
-        end
-    end
-    prev = node.prev
-    next = node.next
-    prev.next = next
-    next.prev = prev
-    if atbottom(node) 
-        node.list.len -= 1
-    end
-    return node
-end
 
-function Base.empty!(l::AbstractSkipList)
+function Base.empty!(l::AbstractSkipLinkedList)
     if hastarget(l)
         # remove all of the inter-list links
         target = l.target

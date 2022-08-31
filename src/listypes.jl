@@ -299,7 +299,7 @@ mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractPairedS
     up::PairedSkipNode{T,L}
     down::PairedSkipNode{T,L}
     target::PairedSkipNode{T,L}
-    function PairedSkipNode{T,L}(list::L) where {T,L<:AbstractSkipList{T}}
+    function PairedSkipNode{T,L}(list::L) where {T,L<:AbstractPairedSkipList{T}}
         node = new{T,L}(list)
         node.next = node
         node.prev = node
@@ -308,7 +308,7 @@ mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractPairedS
         node.down = node
         return node
     end
-    function PairedSkipNode{T,L}(list::L, data) where {T,L<:AbstractSkipList{T}}
+    function PairedSkipNode{T,L}(list::L, data) where {T,L<:AbstractPairedSkipList{T}}
         node = new{T,L}(list, data)
         node.next = node
         node.prev = node
@@ -381,7 +381,7 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
     nlevels::Int
     skipfactor::Int
     sortedby::F
-    target::PairedSkipList{T, PairedSkipList{T,F}}
+    target::PairedSkipList{T, F}
     head::PairedSkipNode{T, PairedSkipList{T,F}}
     tail::PairedSkipNode{T, PairedSkipList{T,F}}
     top::PairedSkipNode{T, PairedSkipList{T,F}}

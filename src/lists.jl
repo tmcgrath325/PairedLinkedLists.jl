@@ -272,7 +272,7 @@ function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
     end
     return l2
 end
-function Base.copy(l::L) where L <: PairedLinkedList
+function Base.copy(l::L) where L <: Union{PairedLinkedList, PairedSkipList}
     l2 = L()
     target2 = L()
     addtarget!(l2, target2)
@@ -648,7 +648,7 @@ function removetarget!(node::AbstractTargetedListNode)
     end
     return node
 end
-removetarget!(node::AbstractListNode) = node;
+removetarget!(node::Union{ListNode,SkipNode}) = node;
 
 function removetarget!(list::Union{AbstractPairedLinkedList, AbstractPairedSkipList})
     if hastarget(list)

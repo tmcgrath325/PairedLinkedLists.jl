@@ -203,29 +203,9 @@
             x = rand(1:1000, la)
 
             for i = 1 : la
-                prevl = collect(l)
-                prevlup = try collect(ListDataIterator(head(l).up))
-                catch
-                    [0]
-                end
                 push!(r, x[i])
                 sort!(r)
                 push!(l, x[i])
-                # @show x[i], length(l), length(r), collect(ListDataIterator(l))
-                if collect(l) != collect(r)
-                    @show collect(l)
-                    @show collect(r)
-                    @show prevl
-                    @show prevlup
-                    @show collect(ListDataIterator(l.top))
-                    levelhead = head(l)
-                    for i=2:l.nlevels
-                        levelhead = levelhead.up
-                        @show PairedLinkedLists.attop(levelhead)
-                        @show collect(ListDataIterator(levelhead))
-                    end                        
-                    throw(ErrorException("testfailed"))
-                end
             end
 
             @test length(l) == length(r)
@@ -236,28 +216,13 @@
                 if 3*rand() < 1
                     pop!(r)
                     pop!(l)
-                    if collect(l) != collect(r)
-                        @show collect(l)
-                        @show collect(r)
-                        throw(ErrorException("testfailed"))
-                    end
                 elseif rand(Bool)
                     popfirst!(r)
                     popfirst!(l)
-                    if collect(l) != collect(r)
-                        @show collect(l)
-                        @show collect(r)
-                        throw(ErrorException("testfailed"))
-                    end
                 else
                     idx = rand(2:length(r))
                     popat!(r, idx)
                     popat!(l, idx)
-                    if collect(l) != collect(r)
-                        @show collect(l)
-                        @show collect(r)
-                        throw(ErrorException("testfailed"))
-                    end
                 end
             end
 
