@@ -19,12 +19,14 @@ abstract type AbstractSkipList{T,F} <: AbstractSkipLinkedList{T,F} end
 abstract type AbstractPairedSkipList{T,F} <: AbstractSkipLinkedList{T,F} end
 
 """
-    node = ListNode(list::DoublyLinkedList, data)
+    node = ListNode(list::DoublyLinkedList [, data])
 
-Create a `ListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
-the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
+Create a `ListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list and 
+contains the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
 
 `node.prev` and `node.next` represent the previous and next nodes, respectively, of a list.
+
+See also [`DoublyLinkedList`](@ref), [`PairedListNode`](@ref), [`TargetedListNode`](@ref).
 """
 mutable struct ListNode{T,L<:AbstractDoublyLinkedList{T}} <: AbstractListNode{T,L}
     list::L
@@ -49,14 +51,18 @@ ListNode{T}(args...) where T = PairedListNode{T,PairedLinkedList{T}}(args...)
 """
     node = PairedListNode(list::PairedLinkedList, data)
 
-Create a `PairedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
-the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and double-link `target` to another
-`PairedListNode`.
+Create a `PairedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list and 
+contains the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
+
+`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list.
 
 A node's `target` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `target`
 of its parent `list`.
 
 The `target` link is assumed to be reciprocated for a `PairedListNode`. For example, `node === node.target.target` should be `true`.
+For one-way inter-list links, see [`TargetedListNode`](@ref).
+
+See also [`PairedLinkedList`](@ref), [`ListNode`](@ref), [`TargetedListNode`](@ref).
 """
 mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractPairedListNode{T,L}
     list::L
@@ -84,14 +90,18 @@ PairedListNode{T}(args...) where T = PairedListNode{T,PairedLinkedList{T}}(args.
 """
     node = TargetListNode(list::AbstractTargetLinkedList, data, [target::AbstractListNode])
 
-Create a `TargetListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
-the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, and link `target` to another
-list node. 
+Create a `TargetedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list and 
+contains the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
+
+`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list.
 
 A node's `target` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `target`
 of its parent `list`.
 
-Unlike a `PairedListNode`, the `target` link for a `TargetListNode` is not assumed to be reciprocated.
+The `target` link is *not* assumed to be reciprocated for a `PairedListNode`, as the targeted node may not even have a `target` field. 
+For guranteed two-way inter-list links, see [`PairedListNode`](@ref).
+
+See also [`TargetedLinkedList`](@ref), [`PairedListNode`](@ref), [`ListNode`](@ref).
 """
 mutable struct TargetedListNode{T,N<:AbstractNode{T},L<:AbstractList{T}} <: AbstractTargetedListNode{T,N,L}
     list::L
@@ -121,18 +131,20 @@ TargetedListNode{T,N}(args...) where {T,R,N<:AbstractNode{T,R}} = TargetedListNo
     l = DoublyLinkedList{::Type}()
     l = DoublyLinkedList(elts...)
 
-Create a `DoublyLinkedList` with with nodes containing data of a specified type.
+Create a `DoublyLinkedList` made up of [`ListNode`](@ref)s with with nodes containing data of a specified type.
 
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
 `tail` at the end of the list . 
 
-The first "real" node of a list  `l` can be accessed with `l.head.next`. Similarly, the last "real" node can
-be accessed with `l.tail.prev`.
+The first "real" node of a list `l` can be accessed with `l.head.next` or `head(l)`. Similarly, the last "real" node can
+be accessed with `l.tail.prev` or `tail(l)`.
+
+See also [`ListNode`](@ref), [`SkipList`](@ref), [`PairedLinkedList`](@ref), [`TargetedLinkedList`](@ref)
 """
 mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
-    len::Int   # is this something you need? You can believe it only if the official API is used, which is OK, but even better might be to not have it if it's not necessary
-    head::ListNode{T,DoublyLinkedList{T}}  # of course deleting it makes `length(l)` an `O(N)` operation, but usually that's what you expect for a linked list
-    tail::ListNode{T,DoublyLinkedList{T}}  # Julia has the [`IteratorSize` trait](https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration) if you need to mark it as absent or slow
+    len::Int
+    head::ListNode{T,DoublyLinkedList{T}}  
+    tail::ListNode{T,DoublyLinkedList{T}}
     function DoublyLinkedList{T}() where T
         l = new{T}(0)
         l.head = ListNode{T,DoublyLinkedList{T}}(l)
@@ -144,7 +156,6 @@ mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
 end
 
 DoublyLinkedList() = DoublyLinkedList{Any}()
-# DoublyLinkedList{T}(l::AbstractLinkedList{S}) where {S,T} = DoublyLinkedList{T}(collect(l)...)
 function DoublyLinkedList{T}(elts...) where T
     l = DoublyLinkedList{T}()
     for elt in elts
@@ -157,13 +168,16 @@ end
     l = PairedLinkedList{::Type}()
     l = PairedLinkedList{::Type}(elts...)
 
-Create a `PairedLinkedList` with nodes containing data of a specified type. 
+Create a `PairedLinkedList` made up of [`PairListNode`](@ref)s containing data of a specified type. Each node can have an inter-list link
+to a node belonging to the list's `target`.
 
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
-`tail` at the end of the list. The list also contains a reference to its "target" list.
+`tail` at the end of the list . 
 
-The first "real" node of a list  `l` can be accessed with `l.head.next`. Similarly, the last "real" node can
-be accessed with `l.tail.prev`.
+The first "real" node of a list `l` can be accessed with `l.head.next` or `head(l)`. Similarly, the last "real" node can
+be accessed with `l.tail.prev` or `tail(l)`.
+
+See also [`PairedListNode`](@ref), [`PairedSkipList`](@ref), [`DoublyLinkedList`](@ref), [`TargetedLinkedList`](@ref)
 """
 mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
     len::Int
@@ -199,17 +213,20 @@ function PairedLinkedList{T}(elts...) where T
 end
 
 """
-    l = TargetLinkedList{T,R,N}()
-    l = TargetLinkedList{T,R,N}(elts...)
+    l = TargetLinkedList{T,R}()
+    l = TargetLinkedList{T,R}(elts...)
     l = TargetLinkedList(list)
 
-Create a `TargetLinkedList` with nodes containing data of a specified type. 
+Create a `TargetLinkedList` made up of [`TargetedListNode`](@ref)s containing data of a specified type. Each node can have an inter-list link
+to a node belonging to the list's `target`.
 
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
 `tail` at the end of the list. The list also contains a reference to its "target" list.
 
 The first "real" node of a list  `l` can be accessed with `l.head.next` or `head(l)`. 
 Similarly, the last "real" node can be accessed with `l.tail.prev` or `tail(l)`.
+
+See also [`TargetedListNode`](@ref), [`DoublyLinkedList`](@ref), [`PairedLinkedList`](@ref)
 """
 mutable struct TargetedLinkedList{T,R<:AbstractList{T},N<:AbstractNode{T,R}} <: AbstractTargetedLinkedList{T,R,N}
     len::Int
@@ -248,12 +265,15 @@ TargetedLinkedList{T,R}(args...) where {T,R} = TargetedLinkedList{T,R,nodetype(R
 
 
 """
-    node = SkipNode(data)
+    node = SkipNode(list::SkipList [, data])
 
-Create a `SkipNode` belonging to the specified `list`. The node contains a reference `list` to the parent list, 
-the provided `data`, but it has no specific insertion point into `list` (see [`insertnode!`](@ref)).
+Create a `SkipNode` belonging to the specified `list`. The node contains a reference `list` to the parent [skip list](https://en.wikipedia.org/wiki/Skip_list)
+and contains the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
 
-`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list.
+`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list. `node.up` and `node.bottom` represent the nodes in adjacent levels
+within the skip list data structure.
+
+See also [`SkipList`](@ref), [`PairedSkipNode`](@ref)
 """
 mutable struct SkipNode{T,L<:AbstractSkipList{T}} <: AbstractSkipNode{T,L}
     list::L
@@ -281,15 +301,20 @@ mutable struct SkipNode{T,L<:AbstractSkipList{T}} <: AbstractSkipNode{T,L}
 end
 
 """
-    node = PairedSkipNode(data)
+    node = PairedSkipNode(list::SkipList [, data])
 
-Create a `PairedSkipNode`. The node contains the provided `data`, a link `prev` to the preceding node, a link `next` to the following node, 
-and double-link `target` to another`PairedSkipNode`.
+Create a `PairedSkipNode` belonging to the specified `list`. The node contains a reference `list` to the parent [skip list](https://en.wikipedia.org/wiki/Skip_list)
+and contains the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
 
-A node's `target` is intended to always be either a reference to itself (denoting unpaired node) or a node belonging to the `target`
-of its parent list.
+`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list. `node.up` and `node.bottom` represent the nodes in adjacent levels
+within the skip list data structure.
 
-The `target` link is intended to be reciprocated for a `PairedSkipNode`. For example, `node === node.target.target` should be `true`.
+A node's `target` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `target`
+of its parent `list`.
+
+The `target` link is assumed to be reciprocated for a `PairedSkipNode`. For example, `node === node.target.target` should be `true`.
+
+See also [`PairedSkipList`](@ref), [`SkipNode`](@ref)
 """
 mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractPairedSkipNode{T,L}
     list::L
@@ -320,15 +345,23 @@ mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractPairedS
 end
 
 """
-    l = SkipList{::Type}()
-    l = SkipList(elts...)
+    l = SkipList{::Type}(; sortedby=identity, skipfactor=2)
+    l = SkipList{::Type}(elts...; sortedby=identity, skipfactor=2)
 
-Create a `SkipList` with with nodes containing data of a specified type.
+Create a `SkipList` made of up [SkipNode](@ref)s containing data of a specified type.
 
-The list contains a "dummy" node `head` at the beginning of the list and a "dummy" node `tail` at the end of the list . 
+The list contains a "dummy" node `head` at the beginning of the list and a "dummy" node `tail` at the end of the list.
 
-The first "real" node of a list  `l` can be accessed with `l.head.next`. Similarly, the last "real" node can
-be accessed with `l.tail.prev`.
+The node at the head of the topmost level of the datastructure can be accessed by `l.top`.
+
+The first "real" node of a list `l` can be accessed with `l.head.next` or `head(l)`. Similarly, the last "real" node can
+be accessed with `l.tail.prev` or `tail(l)`.
+
+The `skipfactor` of the list describes the average number of nodes "skipped" by the above level.
+
+The ordering of the list can be specified by a function, `sortedby`.
+
+See also [`PairedSkipList`](@ref), [`SkipNode`](@ref)
 """
 mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
     len::Int
@@ -365,16 +398,23 @@ function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,
 end
 
 """
-    l = PairedSkipList{::Type}()
-    l = PairedSkipList{::Type}(elts...)
+    l = PairedSkipList{::Type}(; sortedby=identity, skipfactor=2)
+    l = PairedSkipList{::Type}(elts...; sortedby=identity, skipfactor=2)
 
-Create a `PairedSkipList` with nodes containing data of a specified type. 
+Create a `PairedSkipList` with nodes containing data of a specified type. Each node can have an inter-list link
+to a node belonging to the list's `target`.
 
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
 `tail` at the end of the list. The list also contains a reference to its "target" list.
 
 The first "real" node of a list  `l` can be accessed with `l.head.next`. Similarly, the last "real" node can
 be accessed with `l.tail.prev`.
+
+The `skipfactor` of the list describes the average number of nodes "skipped" by the above level.
+
+The ordering of the list can be specified by a function, `sortedby`.
+
+See also [`SkipList`](@ref), [`PairedSkipNode`](@ref)
 """
 mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
     len::Int

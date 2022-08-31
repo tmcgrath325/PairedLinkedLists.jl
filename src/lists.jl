@@ -46,7 +46,9 @@ listtype(n::AbstractNode) = listtype(typeof(n))
     node = newnode(list, data)
 
 Create an list node containing `data` of the appropriate type for the provided `list`.
-(e.g. a `ListNode` is created for a `DoublyLinkedList`). `node` is disconnected from `list`.
+(e.g. a `ListNode` is created for a `DoublyLinkedList`). 
+
+The `node` is disconnected from the `list` (see [`insertafter!`](@ref)).
 """
 newnode(l::AbstractList, data) = nodetype(l)(l, data)
 
@@ -69,7 +71,7 @@ Base.iterate(node::AbstractNode) = iterate(node, node)
 Base.iterate(::AbstractNode, node::AbstractNode) = attail(node) ? nothing : (node, node.next)
 Base.IteratorSize(::AbstractNode) = Base.SizeUnknown()
 """
-    ListNodeIterator(start [, rev])
+    ListNodeIterator(start; rev=false)
 
 Returns an iterator over the nodes of a linked list, starting at the specified node `start`.
 
@@ -84,7 +86,7 @@ struct ListNodeIterator{S<:AbstractNode}
     end
 end
 """
-    ListNodeIterator(list [, rev])
+    ListNodeIterator(list; rev=false)
 
 Returns an iterator over the nodes of a linked list.
 
@@ -100,7 +102,7 @@ Base.IteratorSize(::ListNodeIterator) = Base.SizeUnknown()
 Base.iterate(l::AbstractList) = iterate(l, l.head.next)
 Base.iterate(::AbstractList, node::AbstractNode) = attail(node) ? nothing : (node.data, node.next)
 """
-    ListDataIterator(start [, rev])
+    ListDataIterator(list; rev=false)
 
 Returns an iterator over the data contained in a linked list, starting at the specified node `start`.
 
@@ -115,7 +117,7 @@ struct ListDataIterator{S<:AbstractNode}
     end
 end
 """
-    ListDataIterator(list [, rev])
+    ListDataIterator(list; rev=false)
 
 Returns an iterator over the data contained in a linked list.
 
@@ -568,7 +570,9 @@ end
     hastarget(node) -> Bool
     hastarget(list) -> Bool
 
-Return `true` if the provided node or list has a target, and false otherwise. 
+Return `true` if the provided node or list has a target, and false otherwise.
+
+See also [`addtarget!`](@ref), [`removetarget!`](@ref)
 """
 hastarget(obj::Union{AbstractPairedListNode, AbstractTargetedListNode, AbstractPairedLinkedList, AbstractTargetedLinkedList, AbstractPairedSkipNode, AbstractPairedSkipList}) = (obj.target !== obj)
 hastarget(::Union{ListNode, DoublyLinkedList, SkipNode, SkipList}) = false
@@ -582,6 +586,8 @@ Add a link between a the provided node or list and another object of the same ty
 If the first object is a `PairedListNode' or a 'PairedLinkedList' and either object previously had a target, the prior link is removed.
 
 If the first object is a `TargetedListNode` or a `TargetedLinkedList`, the second object remains unchanged.
+
+See also [`hastarget`](@ref), [`removetarget!`](@ref)
 """
 function addtarget!(list::L, target::L) where L <: Union{AbstractPairedLinkedList, AbstractPairedSkipList}
     if hastarget(list)     # remove existing targets
@@ -633,6 +639,8 @@ Remove the link between the node or list and its target (if the object is alread
 If the object is a `PairedListNode` or `PairedLinkedList`, the link will be deleted from both the object and its target.
 
 If the object is a `TargetedListNode` or `PairedLinkedList`, the link will be deleted from only the object.
+
+See also [`hastarget`](@ref), [`addtarget!`](@ref)
 """
 function removetarget!(node::Union{AbstractPairedListNode, AbstractPairedSkipNode})
     if hastarget(node)
