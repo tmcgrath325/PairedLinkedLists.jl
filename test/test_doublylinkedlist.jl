@@ -7,11 +7,14 @@
         @test isempty(l1)
         @test length(l1) == 0
         @test lastindex(l1) == 0
+        @test keys(l1) == []
         @test collect(l1) == Int[]
         @test eltype(l1) == Int
         @test eltype(typeof(l1)) == Int
         @test_throws ArgumentError pop!(l1)
         @test_throws ArgumentError popfirst!(l1)
+        @test_throws ArgumentError head(l1)
+        @test_throws ArgumentError tail(l1)
     end
 
     @testset "core functionality" begin
@@ -24,16 +27,16 @@
                 for (i,data) in enumerate(l)
                     @test data == i
                 end
-                for (i,data) in enumerate(IteratingListData(l))
+                for (i,data) in enumerate(ListDataIterator(l))
                     @test data == i
                 end
-                for (i,data) in enumerate(IteratingListData(l; rev=true))
+                for (i,data) in enumerate(ListDataIterator(l; rev=true))
                     @test data == n-i+1
                 end
-                for (i,data) in enumerate(IteratingListData(l.head.next.next))
+                for (i,data) in enumerate(ListDataIterator(l.head.next.next))
                     @test data == i+1
                 end
-                for (i,data) in enumerate(IteratingListData(l.tail.prev.prev; rev=true))
+                for (i,data) in enumerate(ListDataIterator(l.tail.prev.prev; rev=true))
                     @test data == n-i
                 end
             end
@@ -42,16 +45,16 @@
                 for (i,node) in enumerate(l.head.next)
                     @test node == newnode(l,i)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l))
+                for (i,node) in enumerate(ListNodeIterator(l))
                     @test node == newnode(l,i)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l; rev=true))
+                for (i,node) in enumerate(ListNodeIterator(l; rev=true))
                     @test node == newnode(l,n-i+1)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l.head.next.next))
+                for (i,node) in enumerate(ListNodeIterator(l.head.next.next))
                     @test node == newnode(l,i+1)
                 end
-                for (i,node) in enumerate(IteratingListNodes(l.tail.prev.prev; rev=true))
+                for (i,node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev=true))
                     @test node == newnode(l,n-i)
                 end
             end
@@ -60,7 +63,7 @@
         @testset "push back / pop back" begin
             l = DoublyLinkedList{Int}()
             dummy_list = DoublyLinkedList{Int}()
-            @test_throws ArgumentError insertnode!(newnode(dummy_list, 0), l.head)
+            @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
                 for i = 1:n
@@ -77,10 +80,11 @@
                     @test lastindex(l) == i
                     @test length(l) == i
                     @test isempty(l) == false
+                    @test keys(l) == collect(1:i)
                     for (j, k) in enumerate(l)
                         @test j == k
                     end
-                    if i > 3 && VERSION > VersionNumber(1,7,0)
+                    if i > 3
                         l1 = DoublyLinkedList{Int32}(1:i...)
                         io = IOBuffer()
                         @test sprint(io -> show(io, iterate(l1))) == "(1, ListNode{Int32, DoublyLinkedList{Int32}}(2))"
@@ -162,6 +166,14 @@
                 @testset "copy" begin
                     l2 = copy(l)
                     @test l == l2
+
+                    l3 = DoublyLinkedList{Int}()
+                    copy!(l3, l)
+                    @test l3 == l
+
+                    l4 = DoublyLinkedList{Int}(1:2*i...)
+                    copy!(l4, l)
+                    @test l4 == l
                 end
 
                 @testset "reverse" begin
@@ -171,7 +183,7 @@
             end
         end
 
-        @testset "map / filter" begin
+        @testset "map / filter / show" begin
             for i = 1:n
                 @testset "map" begin
                     l = DoublyLinkedList{Int}(1:n...)
@@ -291,19 +303,23 @@
                 @test l.len == 1
             end
         end
+
+        @testset "empty" begin
+            l = DoublyLinkedList{Int}(1:n...)
+            @test length(l) == n
+            emptyl = empty(l)
+            @test length(emptyl) == 0
+            @test typeof(l) == typeof(emptyl)
+            @test length(l) == n
+            empty!(l)
+            @test l == emptyl
+        end
     end
 
     @testset "random operations" begin
         l = DoublyLinkedList{Int}()
         r = Int[]
         m = 100
-
-        # here for Julia 1.0 compatibility
-        function popat!(a::Vector, i::Int64)
-            val = a[i]
-            deleteat!(a, i)
-            return val
-        end
 
         for k = 1 : m
             la = rand(2:20)
