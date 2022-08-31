@@ -63,7 +63,7 @@
         @testset "push back / pop back" begin
             l = DoublyLinkedList{Int}()
             dummy_list = DoublyLinkedList{Int}()
-            @test_throws ArgumentError insertnode!(newnode(dummy_list, 0), l.head)
+            @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
                 for i = 1:n
@@ -84,7 +84,7 @@
                     for (j, k) in enumerate(l)
                         @test j == k
                     end
-                    if i > 3 && VERSION > VersionNumber(1,7,0)
+                    if i > 3
                         l1 = DoublyLinkedList{Int32}(1:i...)
                         io = IOBuffer()
                         @test sprint(io -> show(io, iterate(l1))) == "(1, ListNode{Int32, DoublyLinkedList{Int32}}(2))"
@@ -205,7 +205,7 @@
                     io = IOBuffer()
                     @test sprint(io -> show(io, l.head.next)) == "$(typeof(l.head.next))($(l.head.next.data))"
                     io1 = IOBuffer()
-                    write(io1, "$(l.len)-element DoublyLinkedList{Int32}(");
+                    write(io1, "DoublyLinkedList{Int32}(");
                     write(io1, join(l, ", "));
                     write(io1, ")")
                     seekstart(io1)
@@ -320,13 +320,6 @@
         l = DoublyLinkedList{Int}()
         r = Int[]
         m = 100
-
-        # here for Julia 1.0 compatibility
-        function popat!(a::Vector, i::Int64)
-            val = a[i]
-            deleteat!(a, i)
-            return val
-        end
 
         for k = 1 : m
             la = rand(2:20)
