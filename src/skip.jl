@@ -52,7 +52,11 @@ atbottom(n::AbstractSkipNode) = n.down === n
 
 # this function similar to insertafter!, but does not modify the length of the list, making it appropriate for skip nodes not on the bottom row.
 function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
-    node.list === prev.list || throw(ArgumentError("The nodes must have the same parent list."))
+    if node.list !== prev.list 
+        @show length(node.list)
+        @show length(prev.list)
+        throw(ArgumentError("The nodes must have the same parent list."))
+    end
     next = prev.next
     node.prev = prev
     node.next = next
@@ -108,6 +112,9 @@ function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNod
             end
         end
         if lvl <= level
+            if ln.list !== l
+                throw(ErrorException("ln should belong to the list"))
+            end
             node = lvl === 1 ? insertafter!(bottomnode, ln) : insertskipafter!(newnode(l,data), ln)
             if abovenode !== l.head 
                 node.up = abovenode
@@ -148,6 +155,9 @@ end
 Base.push!(l::AbstractSkipLinkedList{T}, data) where T = push!(l, newnode(l,data))
 
 function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}) where T
+    bottomnode.list === l || throw(ArgumentError("The provided node does not belong to the list."))
+    bottomnode.down = bottomnode
+    bottomnode.up = bottomnode
     data = bottomnode.data
     sdata = l.sortedby(data)
     if l.len === 0
