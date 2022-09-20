@@ -80,9 +80,13 @@ Otherwise, it will advance toward the tail of the list.
 """
 struct ListNodeIterator{S<:AbstractNode}
     start::S
+    stop::S
     rev::Bool
-    function ListNodeIterator(start::S; rev::Bool = false) where S
-        return new{S}(start, rev)
+    function ListNodeIterator(start::S, stop::Union{Nothing,S}=nothing; rev::Bool = false) where S
+        stopnode::S = !isnothing(stop) ? stop : 
+            (rev ? start.list.head : start.list.tail) 
+        start.list === stopnode.list || throw(ArgumentError("The starting and stopping nodes must belong to the same list."))
+        return new{S}(start, stopnode, rev)
     end
 end
 """
@@ -93,9 +97,14 @@ Returns an iterator over the nodes of a linked list.
 If `rev` is `true`, the iterator will start at the tail of the list and advance toward the head.
 Otherwise, it will start at the head of the list and advance toward the tail.
 """
-ListNodeIterator(l::AbstractList; rev::Bool = false) = ListNodeIterator(rev ? l.tail.prev : l.head.next; rev = rev)
+function ListNodeIterator(l::AbstractList; rev::Bool = false)
+    start = rev ? l.tail.prev : l.head.next
+    stop = l.len == 0 ? start : 
+        (rev ? l.head : l.tail)
+    return ListNodeIterator(start, stop; rev = rev)
+end
 Base.iterate(iter::ListNodeIterator) = iterate(iter, iter.start)
-Base.iterate(iter::ListNodeIterator{S}, node::S) where S = iter.rev ? (athead(node) ? nothing : (node, node.prev)) : (attail(node) ? nothing : (node, node.next))
+Base.iterate(iter::ListNodeIterator{S}, node::S) where S = node === iter.stop ? nothing : (node, iter.rev ? node.prev : node.next)
 Base.IteratorSize(::ListNodeIterator) = Base.SizeUnknown()
 
 # iterating over a list returns the data contained in each node
@@ -111,9 +120,13 @@ Otherwise, it will advance toward the tail of the list.
 """
 struct ListDataIterator{S<:AbstractNode}
     start::S
+    stop::S
     rev::Bool
-    function ListDataIterator(start::S; rev::Bool = false) where S
-        return new{S}(start, rev)
+    function ListDataIterator(start::S, stop::Union{Nothing,S}=nothing; rev::Bool = false) where S
+        stopnode::S = !isnothing(stop) ? stop : 
+            (rev ? start.list.head : start.list.tail) 
+        start.list === stopnode.list || throw(ArgumentError("The starting and stopping nodes must belong to the same list."))
+        return new{S}(start, stopnode, rev)
     end
 end
 """
@@ -124,9 +137,14 @@ Returns an iterator over the data contained in a linked list.
 If `rev` is `true`, the iterator will start at the tail of the list and advance toward the head.
 Otherwise, it will start at the head of the list and advance toward the tail.
 """
-ListDataIterator(l::AbstractList{T}; rev::Bool = false) where T = ListDataIterator(rev ? l.tail.prev : l.head.next; rev = rev)
+function ListDataIterator(l::AbstractList{T}; rev::Bool = false) where T
+    start = rev ? l.tail.prev : l.head.next
+    stop = l.len == 0 ? start : 
+        (rev ? l.head : l.tail)
+    return ListDataIterator(start, stop; rev = rev)
+end
 Base.iterate(iter::ListDataIterator) = iterate(iter, iter.start)
-Base.iterate(iter::ListDataIterator{S}, node::S) where S =  iter.rev ? (athead(node) ? nothing : (node.data, node.prev)) : (attail(node) ? nothing : (node.data, node.next))
+Base.iterate(iter::ListDataIterator{S}, node::S) where S =  node === iter.stop ? nothing : (node.data, iter.rev ? node.prev : node.next)
 Base.IteratorSize(::ListDataIterator) = Base.SizeUnknown()
 
 Base.isempty(l::AbstractList) = l.len == 0
