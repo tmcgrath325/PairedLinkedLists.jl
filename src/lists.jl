@@ -641,7 +641,9 @@ function addtarget!(list::AbstractTargetedLinkedList{T,R}, target::R) where {T,R
 end
 
 function addtarget!(node::AbstractTargetedListNode{T,N,L}, target::N) where {T,N,L}
-    node.list.target === target.list || throw(ArgumentError("The provided node must belong to the list being targeted."))
+    if hastarget(node.list)
+        node.list.target === target.list || throw(ArgumentError("The provided node must belong to the list being targeted."))
+    end
     if hastarget(node)    # remove an existing target
         removetarget!(node)
     end
