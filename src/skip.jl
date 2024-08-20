@@ -1,6 +1,6 @@
 pushcache!(cache::SkipListCache, data, level) = begin
-    push!(cache.data(data))
-    push!(cache.levels(level))
+    push!(cache.data, data)
+    push!(cache.levels, level)
 end
 
 pushcache!(::Nothing, data, level) = nothing
