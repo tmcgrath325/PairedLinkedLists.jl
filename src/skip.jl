@@ -114,9 +114,12 @@ function randomlevel(max::Int, skipfactor::Int)
     return level
 end
 
-Base.push!(l::AbstractSkipLinkedList{T}, data) where T = push!(l, newnode(l,data))
+Base.push!(l::AbstractSkipLinkedList{T}, data) where T = pushskip!(l, data)
+Base.push!(l::AbstractSkipLinkedList{T}, node::AbstractSkipNode{T}) where T = pushskip!(l, node)
 
-function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}) where T
+pushskip!(l::AbstractSkipLinkedList{T}, data, level::Int = randomlevel(l.nlevels, l.skipfactor)) where T = pushskip!(l, newnode(l,data), level)
+
+function pushskip!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}, level::Int = randomlevel(l.nlevels, l.skipfactor)) where T
     bottomnode.list === l || throw(ArgumentError("The provided node does not belong to the list."))
     bottomnode.down = bottomnode
     bottomnode.up = bottomnode
@@ -144,10 +147,9 @@ function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T
         end
         return l
     else
-        (l.len > l.skipfactor ^ l.nlevels) && addlevel!(l)
-        newlevel = randomlevel(l.nlevels, l.skipfactor)
-        searchinsert!(l, bottomnode, newlevel)
+        searchinsert!(l, bottomnode, level)
     end
+    (l.len > l.skipfactor ^ l.nlevels) && addlevel!(l)
     return l
 end
 
@@ -170,7 +172,11 @@ function deletenode!(node::AbstractSkipNode)
         prev.next = next
         next.prev = prev
         l.len -= 1
-        if l.nlevels === 1              # if there is only a single level, all that remains is to update the "top"
+        if l.len === 0                  # if the list is now empty, reset the top and toptail nodes
+            l.top = l.head
+            l.toptail = l.tail
+            l.nlevels = 1
+        elseif l.nlevels === 1          # if there is only a single level, all that remains is to update the "top"
             l.top = l.len === 0 ? l.head : head(l)             
         else                            # otherwise, adjust the first node for each level
             oldlevelhead = node
