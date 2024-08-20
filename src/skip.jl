@@ -50,6 +50,7 @@ end
 
 function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}, level::Int) where T
     data = bottomnode.data
+    pushcache!(l.cache, data, level)
     sdata = l.sortedby(data)
     rn = getfirst(x -> l.sortedby(x.data) > sdata, l.nlevels > 1 ? l.top : l.head.next)
     rn = isnothing(rn) ? l.toptail : rn
@@ -145,7 +146,6 @@ function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T
     else
         (l.len > l.skipfactor ^ l.nlevels) && addlevel!(l)
         newlevel = randomlevel(l.nlevels, l.skipfactor)
-        pushcache!(l.cache, bottomnode.data, newlevel)
         searchinsert!(l, bottomnode, newlevel)
     end
     return l
@@ -160,10 +160,10 @@ The node can be at any level of the skip list, and all nodes directly above or b
 """
 function deletenode!(node::AbstractSkipNode)
     l = node.list
-    pushcache!(l.cache, node.data, -1)
     hastarget(node) && removetarget!(node.target)
     # handle deletion of the first node in the bottom list
     if node === head(l)
+        pushcache!(l.cache, node.data, -1)
         # remove the provided node
         next = node.next
         prev = node.prev
@@ -218,6 +218,7 @@ function deletenode!(node::AbstractSkipNode)
     prev.next = next
     next.prev = prev
     if atbottom(node) 
+        pushcache!(l.cache, node.data, -1)
         node.list.len -= 1
     end
     return node
