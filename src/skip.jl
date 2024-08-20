@@ -1,54 +1,21 @@
+pushaddedcache!(cache::SkipListCache, data, level) = begin
+    push!(cache.added_data(data))
+    push!(cache.added_levels(level))
+end
+
+pushaddedcache!(::Nothing, data, level) = nothing
+
+pushremovedcache!(cache::SkipListCache, data) = begin
+    push!(cache.removed_data(data))
+end
+
+pushremovedcache!(::Nothing, data) = nothing
+
 nodetype(::Type{<:AbstractSkipList{T,F}}) where {T,F} = SkipNode{T,SkipList{T,F}}
 nodetype(::Type{<:AbstractPairedSkipList{T,F}}) where {T,F} = PairedSkipNode{T,PairedSkipList{T,F}}
 
 attop(n::AbstractSkipNode) = n.up === n
 atbottom(n::AbstractSkipNode) = n.down === n
-
-# function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,F}
-#     l = SkipList{T,F}(skipfactor, sortedby)
-#     length(elts) === 0 && return l
-#     nlevels = Int(ceil(log(skipfactor, max(length(elts),skipfactor))))
-#     l.nlevels = nlevels
-
-#     sortedelts = sort(T[elts...]; by=sortedby)
-#     left = insertafter!(newnode(l, first(sortedelts)), l.head)
-#     right = l.tail
-#     currentnodes = [left]
-#     for i=2:nlevels
-#         aboveleft = newnode(l, first(sortedelts))
-#         left.up = aboveleft
-#         aboveleft.down = left
-
-#         aboveright = SkipNode{T,SkipList{T,F}}(l)
-#         right.up = aboveright
-#         aboveright.down = right
-
-#         left = aboveleft
-#         right = aboveright
-#         left.next = right
-#         right.prev = left
-
-#         push!(currentnodes, left)
-#     end
-#     l.top = left
-#     l.toptail = right
-
-#     spacings = [skipfactor^x for x in 0:nlevels-1]
-#     for i=2:length(sortedelts)
-#         for j=1:nlevels
-#             if j === 1 
-#                 currentnodes[j] = insertafter!(newnode(l,sortedelts[i]), currentnodes[j])
-#             elseif i % spacings[j] === 1
-#                 currentnodes[j] = insertskipafter!(newnode(l,sortedelts[i]), currentnodes[j])
-#                 currentnodes[j].down = currentnodes[j-1]
-#                 currentnodes[j-1].up = currentnodes[j]
-#             else
-#                 break
-#             end
-#         end
-#     end
-#     return l
-# end    
 
 # this function similar to insertafter!, but does not modify the length of the list, making it appropriate for skip nodes not on the bottom row.
 function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
@@ -181,7 +148,9 @@ function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T
         return l
     else
         (l.len > l.skipfactor ^ l.nlevels) && addlevel!(l)
-        searchinsert!(l, bottomnode, randomlevel(l.nlevels, l.skipfactor))
+        newlevel = randomlevel(l.nlevels, l.skipfactor)
+        pushaddedcache!(l.cache, bottomnode.data, newlevel)
+        searchinsert!(l, bottomnode, newlevel)
     end
     return l
 end
@@ -195,6 +164,7 @@ The node can be at any level of the skip list, and all nodes directly above or b
 """
 function deletenode!(node::AbstractSkipNode)
     l = node.list
+    pushremovedcache!(l.cache, node.data)
     hastarget(node) && removetarget!(node.target)
     # handle deletion of the first node in the bottom list
     if node === head(l)
