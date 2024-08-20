@@ -1,15 +1,9 @@
-pushaddedcache!(cache::SkipListCache, data, level) = begin
-    push!(cache.added_data(data))
-    push!(cache.added_levels(level))
+pushcache!(cache::SkipListCache, data, level) = begin
+    push!(cache.data(data))
+    push!(cache.levels(level))
 end
 
-pushaddedcache!(::Nothing, data, level) = nothing
-
-pushremovedcache!(cache::SkipListCache, data) = begin
-    push!(cache.removed_data(data))
-end
-
-pushremovedcache!(::Nothing, data) = nothing
+pushcache!(::Nothing, data, level) = nothing
 
 nodetype(::Type{<:AbstractSkipList{T,F}}) where {T,F} = SkipNode{T,SkipList{T,F}}
 nodetype(::Type{<:AbstractPairedSkipList{T,F}}) where {T,F} = PairedSkipNode{T,PairedSkipList{T,F}}
@@ -149,7 +143,7 @@ function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T
     else
         (l.len > l.skipfactor ^ l.nlevels) && addlevel!(l)
         newlevel = randomlevel(l.nlevels, l.skipfactor)
-        pushaddedcache!(l.cache, bottomnode.data, newlevel)
+        pushcache!(l.cache, bottomnode.data, newlevel)
         searchinsert!(l, bottomnode, newlevel)
     end
     return l
@@ -164,7 +158,7 @@ The node can be at any level of the skip list, and all nodes directly above or b
 """
 function deletenode!(node::AbstractSkipNode)
     l = node.list
-    pushremovedcache!(l.cache, node.data)
+    pushcache!(l.cache, node.data, -1)
     hastarget(node) && removetarget!(node.target)
     # handle deletion of the first node in the bottom list
     if node === head(l)

@@ -265,12 +265,11 @@ TargetedLinkedList{T,R}(args...) where {T,R} = TargetedLinkedList{T,R,nodetype(R
 
 # for debugging
 struct SkipListCache{T}
-    added_data::Vector{T}
-    added_levels::Vector{Int}
-    removed_data::Vector{T}
+    data::Vector{T}
+    levels::Vector{Int}
 end
 
-SkipListCache{T}() where T = SkipListCache{T}(T[],Int[],T[])
+SkipListCache{T}() where T = SkipListCache{T}(T[],Int[])
 
 
 """
