@@ -122,10 +122,12 @@ function Base.push!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T
     data = bottomnode.data
     sdata = l.sortedby(data)
     if l.len === 0
+        pushcache!(l.cache, bottomnode.data, 1)
         insertafter!(bottomnode, l.head)
         l.top = head(l)
         return l
     elseif sdata < l.sortedby(first(l))
+        pushcache!(l.cache, bottomnode.data, 1)
         insertafter!(bottomnode, l.head)
         if l.nlevels === 1
             l.top = bottomnode 
