@@ -1,7 +1,7 @@
 name = "PairedLinkedLists"
 uuid = "7a42b37b-ed3b-477a-9848-3661f53bb718"
 authors = ["Tom McGrath <tmcgrath325@gmail.com> and contributors"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 
