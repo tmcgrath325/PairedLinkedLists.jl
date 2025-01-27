@@ -263,6 +263,14 @@ end
 TargetedLinkedList{T,R}(args...) where {T,R} = TargetedLinkedList{T,R,nodetype(R)}(args...)
 
 
+# for debugging
+struct SkipListCache{T}
+    data::Vector{T}
+    levels::Vector{Int}
+end
+
+SkipListCache{T}() where T = SkipListCache{T}(T[],Int[])
+
 
 """
     node = SkipNode(list::SkipList [, data])
@@ -372,6 +380,7 @@ mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
     tail::SkipNode{T, SkipList{T,F}}
     top::SkipNode{T, SkipList{T,F}}
     toptail::SkipNode{T, SkipList{T,F}}
+    cache::Union{Nothing,SkipListCache{T}}
     function SkipList{T,F}(skipfactor::Int=2, sortedby::F=identity) where {T,F<:Function}
         l = new{T,F}(0,1,skipfactor,sortedby)
         l.head = SkipNode{T,SkipList{T,F}}(l)
@@ -385,6 +394,7 @@ mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
         l.tail.prev = l.head
         l.top.next = l.toptail
         l.toptail.prev = l.top
+        l.cache = nothing
         return l
     end
 end
@@ -426,6 +436,7 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
     tail::PairedSkipNode{T, PairedSkipList{T,F}}
     top::PairedSkipNode{T, PairedSkipList{T,F}}
     toptail::PairedSkipNode{T, PairedSkipList{T,F}}
+    cache::Union{Nothing,SkipListCache{T}}
     function PairedSkipList{T,F}(skipfactor::Int=2, sortedby::F=identity) where {T,F<:Function}
         l = new{T,F}(0,1,skipfactor,sortedby)
         l.target = l
@@ -440,6 +451,7 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.tail.prev = l.head
         l.top.next = l.toptail
         l.toptail.prev = l.top
+        l.cache = nothing
         return l
     end
     function PairedSkipList{T,F}(target::PairedSkipList{T}, skipfactor::Int=2, sortedby::F=identity) where {T,F<:Function}
@@ -455,6 +467,7 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.tail.prev = l.head
         l.top.next = l.toptail
         l.toptail.prev = l.top
+        l.cache = nothing
         return l
     end
 end
