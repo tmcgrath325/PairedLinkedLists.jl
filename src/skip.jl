@@ -5,11 +5,50 @@ end
 
 pushcache!(::Nothing, data, level) = nothing
 
+removecache!(cache::SkipListCache, node) = begin
+    level = 1
+    while !atbottom(node)
+        node = node.down
+        level += 1
+    end
+    pushcache!(cache, node.data, -level)
+end
+
+removecache!(::Nothing, node) = nothing
+
+emptycache!(cache::SkipListCache) = begin
+    empty!(cache.data)
+    empty!(cache.levels)
+end
+
+emptycache!(::Nothing) = nothing
+
 nodetype(::Type{<:AbstractSkipList{T,F}}) where {T,F} = SkipNode{T,SkipList{T,F}}
 nodetype(::Type{<:AbstractPairedSkipList{T,F}}) where {T,F} = PairedSkipNode{T,PairedSkipList{T,F}}
 
 attop(n::AbstractSkipNode) = n.up === n
 atbottom(n::AbstractSkipNode) = n.down === n
+
+function height(n::AbstractSkipNode)
+    h = 1;
+    if !attop(n)
+        abovenode = n.up
+        h += 1
+        while !attop(abovenode)
+            abovenode = abovenode.up
+            h += 1
+        end
+    end
+    if !atbottom(n)
+        belownode = n.down
+        h += 1
+        while !atbottom(belownode)
+            belownode = belownode.down
+            h += 1
+        end
+    end
+    return h
+end
 
 # this function similar to insertafter!, but does not modify the length of the list, making it appropriate for skip nodes not on the bottom row.
 function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
@@ -50,17 +89,30 @@ end
 
 function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}, level::Int) where T
     data = bottomnode.data
-    pushcache!(l.cache, data, level)
     sdata = l.sortedby(data)
+    if level > l.nlevels
+        @show level, l.nlevels
+        for i=l.nlevels+1:level
+            addlevel!(l)
+        end
+        @show l.nlevels
+    end
     rn = getfirst(x -> l.sortedby(x.data) > sdata, l.nlevels > 1 ? l.top : l.head.next)
     rn = isnothing(rn) ? l.toptail : rn
     ln = rn.prev
+    # !(attop(rn) && attop(ln)) && throw(ErrorException("Invalid top of skip list"))
+
     abovenode = l.head
     if level === l.nlevels 
         abovenode = level === 1 ? insertafter!(bottomnode, ln) : insertskipafter!(newnode(l,data), ln)
     end
     for lvl = l.nlevels-1:-1:1
-        @assert !atbottom(ln)
+        try
+            @assert !atbottom(ln)
+        catch e
+            @show level, lvl, l.nlevels, height(l.top), sdata, l.top.data, head(l).data
+            throw(e)
+        end
         ln = ln.down
         rn = rn.down
         for n in ln
@@ -85,6 +137,7 @@ function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNod
             abovenode = node
         end
     end
+    pushcache!(l.cache, data, level)
     return ln
 end
 
@@ -102,6 +155,28 @@ function addlevel!(l::AbstractSkipLinkedList)
     l.top = top
     l.toptail = toptail
     return l
+end
+
+function removelevel!(l::AbstractSkipLinkedList)
+    l.nlevels <= 1 && throw(ErrorException("Cannot remove the only level of a skip list"))
+    for n in ListNodeIterator(l.top.next)
+        n.down.top = n.down
+    end
+    l.top = l.top.down
+    l.top.up = l.top
+    l.toptail = l.toptail.down
+    l.toptail.up = l.toptail
+    l.nlevels -= 1
+end
+
+function trimlevels!(l::AbstractSkipLinkedList)
+    while l.nlevels > 1 && l.top.next === l.toptail
+        l.top = l.top.down
+        l.top.up = l.top
+        l.toptail = l.toptail.down
+        l.toptail.up = l.toptail
+        l.nlevels -= 1
+    end
 end
 
 # generate a random level at which to insert a new node
@@ -125,13 +200,19 @@ function pushskip!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNode{T}
     bottomnode.up = bottomnode
     data = bottomnode.data
     sdata = l.sortedby(data)
+    if (level > l.nlevels) && l.len > 0
+        for i=l.nlevels+1:level
+            addlevel!(l)
+        end
+    end
     if l.len === 0
+        @assert l.nlevels === 1
         pushcache!(l.cache, bottomnode.data, 1)
         insertafter!(bottomnode, l.head)
-        l.top = head(l)
+        l.top = bottomnode
         return l
     elseif sdata < l.sortedby(first(l))
-        pushcache!(l.cache, bottomnode.data, 1)
+        pushcache!(l.cache, bottomnode.data, l.nlevels)
         insertafter!(bottomnode, l.head)
         if l.nlevels === 1
             l.top = bottomnode 
@@ -165,7 +246,7 @@ function deletenode!(node::AbstractSkipNode)
     hastarget(node) && removetarget!(node.target)
     # handle deletion of the first node in the bottom list
     if node === head(l)
-        pushcache!(l.cache, node.data, -1)
+        pushcache!(l.cache, node.data, -l.nlevels)
         # remove the provided node
         next = node.next
         prev = node.prev
@@ -175,6 +256,7 @@ function deletenode!(node::AbstractSkipNode)
         if l.len === 0                  # if the list is now empty, reset the top and toptail nodes
             l.top = l.head
             l.toptail = l.tail
+            l.tail.up = l.tail
             l.nlevels = 1
         elseif l.nlevels === 1          # if there is only a single level, all that remains is to update the "top"
             l.top = l.len === 0 ? l.head : head(l)             
@@ -197,34 +279,23 @@ function deletenode!(node::AbstractSkipNode)
                 prevnode = currentnode
             end
             l.top = currentnode
-        end
+        end 
         return node
     end
 
     # handle deletion of any other node
-    if !attop(node)
+    if athead(node) && !atbottom(node)
+        return deletenode!(node.down)
+    elseif !attop(node)
         deletenode!(node.up)
-    elseif athead(node)
-        if node.next == node.list.toptail
-            if atbottom(node)
-                node.list.top = node.list.head
-            else # remove an entire level
-                node.list.top = node.down
-                node.list.top.up = node.list.top
-                node.list.toptail = node.list.toptail.down
-                node.list.toptail.up = node.list.toptail
-                node.list.nlevels -= 1
-            end
-        else
-            node.list.top = node.next
-        end
+    else
+        removecache!(l.cache, node)
     end
     prev = node.prev
     next = node.next
     prev.next = next
     next.prev = prev
     if atbottom(node) 
-        pushcache!(l.cache, node.data, -1)
         node.list.len -= 1
     end
     return node
@@ -237,6 +308,8 @@ function Base.empty!(l::AbstractSkipLinkedList)
         removetarget!(l)
         addtarget!(l, target)
     end
+
+    emptycache!(l.cache)
     
     l.head.next = l.tail
     l.tail.prev = l.head
@@ -246,4 +319,40 @@ function Base.empty!(l::AbstractSkipLinkedList)
     l.len = 0
     l.nlevels = 1
     return l
+end
+
+"""
+    copyfromcache(l::AbstractSkipLinkedList)
+
+Returns a copy of a skip list created from its cache. This adds and removes entries in the same order as had been previously done in original list.
+"""
+function copyfromcache(l::L) where {T, F, L<:AbstractSkipLinkedList{T,F}}
+    @assert !isnothing(l.cache)
+    return copyfromcache(L, l.cache; skipfactor = l.skipfactor, sortedby = l.sortedby)
+end
+
+"""
+    copyfromcache(c::SkipListCache)
+
+Returns a skip list created from a SkipListCache. This adds and removes entries as speficied by the cache.
+"""
+function copyfromcache(L::Type{<:AbstractSkipLinkedList{T,F}}, cache::SkipListCache{T}; skipfactor::Int = 2, sortedby::F=identity) where {T,F}
+    lcopy = L(skipfactor, sortedby)
+    lcopy.cache = SkipListCache{T}()
+    for (data, level) in zip(cache.data, cache.levels)
+        if level < 0
+            node_to_delete = lcopy.head.next
+            while !(node_to_delete.data == data && height(node_to_delete) == -level)
+                node_to_delete = node_to_delete.next
+                if attail(node_to_delete)
+                    throw(ErrorException("Node not found: $(data), $(level)"))
+                end
+            end
+            @assert atbottom(node_to_delete)
+            deletenode!(node_to_delete)
+        else
+            pushskip!(lcopy, data, level)
+        end
+    end
+    return lcopy
 end

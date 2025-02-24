@@ -66,6 +66,13 @@ Return true if the node is the "dummy" node at the end of the list, and false ot
 """
 attail(node::AbstractNode) = node === node.next
 
+"""
+    isdisconnected(node) -> Bool
+
+Return true if the node is not connected to any other node, and false otherwise.
+"""
+isdisconnected(node::AbstractNode) = (node.prev === node && node.next === node) || (node.prev.next !== node && node.next.prev !== node)
+
 # Iterating with a node returns the nodes themselves, and terminates at a list's tail
 Base.iterate(node::AbstractNode) = iterate(node, node)
 Base.iterate(::AbstractNode, node::AbstractNode) = attail(node) ? nothing : (node, node.next)
@@ -104,14 +111,14 @@ function ListNodeIterator(l::AbstractList; rev::Bool = false)
     return ListNodeIterator(start, stop; rev = rev)
 end
 Base.iterate(iter::ListNodeIterator) = iterate(iter, iter.start)
-Base.iterate(iter::ListNodeIterator{S}, node::S) where S = node === iter.stop ? nothing : (node, iter.rev ? node.prev : node.next)
+Base.iterate(iter::ListNodeIterator{S}, node::S) where S = (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node, iter.rev ? node.prev : node.next)
 Base.IteratorSize(::ListNodeIterator) = Base.SizeUnknown()
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractList) = iterate(l, l.head.next)
 Base.iterate(::AbstractList, node::AbstractNode) = attail(node) ? nothing : (node.data, node.next)
 """
-    ListDataIterator(list; rev=false)
+    ListDataIterator(start; rev=false)
 
 Returns an iterator over the data contained in a linked list, starting at the specified node `start`.
 
@@ -144,7 +151,7 @@ function ListDataIterator(l::AbstractList{T}; rev::Bool = false) where T
     return ListDataIterator(start, stop; rev = rev)
 end
 Base.iterate(iter::ListDataIterator) = iterate(iter, iter.start)
-Base.iterate(iter::ListDataIterator{S}, node::S) where S =  node === iter.stop ? nothing : (node.data, iter.rev ? node.prev : node.next)
+Base.iterate(iter::ListDataIterator{S}, node::S) where S =  (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node.data, iter.rev ? node.prev : node.next)
 Base.IteratorSize(::ListDataIterator) = Base.SizeUnknown()
 
 Base.isempty(l::AbstractList) = l.len == 0

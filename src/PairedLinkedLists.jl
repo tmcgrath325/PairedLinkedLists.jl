@@ -10,11 +10,12 @@ module PairedLinkedLists
 export popat!
 
 export AbstractListNode, ListNode, PairedListNode, TargetedListNode, SkipNode, PairedSkipNode
-export AbstractLinkedList, DoublyLinkedList, PairedLinkedList, TargetedLinkedList, SkipList, PairedSkipList
+export AbstractLinkedList, DoublyLinkedList, PairedLinkedList, TargetedLinkedList, SkipList, PairedSkipList, SkipListCache
 export head, tail, athead, attail, ListNodeIterator, ListDataIterator
 export nodetype, getnode, newnode, deletenode!, insertbefore!, insertafter!
 export hastarget, addtarget!, removetarget!
 export getfirst
+export copyfromcache
 
 include("listypes.jl")
 include("lists.jl")
