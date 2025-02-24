@@ -356,3 +356,39 @@ function copyfromcache(L::Type{<:AbstractSkipLinkedList{T,F}}, cache::SkipListCa
     end
     return lcopy
 end
+
+"""
+    skiplistsidentical(l1::SkipList, l2::SkipList)
+
+Returns true if the two skip lists are identical, false otherwise. 
+    
+The lists are considered identical if the values of their nodes are the same at each "level" of the list.
+Because nodes are typically added at a random level, two skip lists constructed from the same data will generally not be identical unless generated using `copyfromcache`.
+
+See also [`copyfromcache`](@ref)
+"""
+function skiplistsidentical(l1, l2)
+    if (l1.len != l2.len) || (l1.nlevels != l2.nlevels)
+        return false
+    end
+    h1 = l1.top
+    h2 = l2.top
+    level = l1.nlevels
+    while level > 0
+        for (n1, n2) in zip(ListNodeIterator(h1), ListNodeIterator(h2))
+            if athead(n1) && athead(n2)
+                continue
+            end
+            if attail(n1) && attail(n2)
+                break
+            end
+            if n1.data != n2.data
+                return false
+            end
+        end
+        h1 = h1.down
+        h2 = h2.down
+        level -= 1
+    end
+    return true
+end
