@@ -1,4 +1,4 @@
-using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop
+using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsidentical
 
 @testset "SkipList" begin
 
@@ -196,7 +196,10 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop
     end
 
     @testset "random operations" begin
-        l = SkipList{Int}()
+        l1 = SkipList{Int}()
+        l2 = SkipList{Int}() # for testing the cache
+        l2.cache = SkipListCache{Int}()
+        for l in (l1, l2)
         r = Int[]
         m = 100
 
@@ -212,6 +215,10 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop
 
             @test length(l) == length(r)
             @test collect(l) == r
+
+            if !isnothing(l.cache)
+                @test skiplistsidentical(l, copyfromcache(l))
+            end
 
             lr = rand(0:length(r)-1)
             for i = 1 : lr
@@ -234,6 +241,10 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop
             @test length(l) == length(r)
             @test collect(l) == r
 
+            if !isnothing(l.cache)
+                @test skiplistsidentical(l, copyfromcache(l))
+            end
+
             levelcounter = 1
             node = head(l)
             while !attop(node)
@@ -242,6 +253,7 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop
             end
             @test levelcounter == l.nlevels
         end
+    end
     end
 
     @testset "specific cases" begin
@@ -294,22 +306,22 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop
                 -1,
                 1,
                 1,
-                -1,
-                -1,
-                1,
+                -2,
                 -1,
                 1,
+                -2,
+                2,
                 1,
                 -1,
                 1,
                 2,
+                -3,
                 -1,
-                -1,
-                -1,
+                -3,
                 -1,
                 1,
                 -1,
-                -1,
+                -3,
                 1,
                 1,
                 -1,
@@ -318,20 +330,12 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop
             ]
 
             l = SkipList{Tuple{Float64, Float64}}(; sortedby = x -> (x[1], -x[2]))
-            for (i, (data, level)) in enumerate(zip(dataqueue, levelqueue))
-                if level < 0
-                    node_to_delete = l.head
-                    while !(node_to_delete.data[1] ≈ data[1] && node_to_delete.data[2] ≈ data[2])
-                        node_to_delete = node_to_delete.next
-                        if attail(node_to_delete)
-                            throw(ErrorException("Node not found"))
-                        end
-                    end
-                    deletenode!(node_to_delete)
-                else
-                    pushskip!(l, data, level)
-                end
-            end
+            l = copyfromcache(typeof(l), SkipListCache{Tuple{Float64,Float64}}(dataqueue, levelqueue); sortedby = l.sortedby)
+
+            @test l.cache.data == dataqueue
+            @test l.cache.levels == levelqueue
+
+            @test skiplistsidentical(l, copyfromcache(l))
         end
     end
 end
