@@ -163,6 +163,7 @@ function DoublyLinkedList{T}(elts...) where T
     end
     return l
 end
+DoublyLinkedList(elts...) = DoublyLinkedList{mapreduce(typeof, promote_type, elts)}(elts...)
 
 """
     l = PairedLinkedList{::Type}()
@@ -406,6 +407,7 @@ function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,
     end
     return l
 end
+SkipList(elts...; kw...) = SkipList{mapreduce(typeof, promote_type, elts)}(elts...; kw...)
 
 """
     l = PairedSkipList{::Type}(; sortedby=identity, skipfactor=2)
@@ -479,6 +481,7 @@ function PairedSkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) whe
     end
     return l
 end
+PairedSkipList(elts...; kw...) = PairedSkipList{mapreduce(typeof, promote_type, elts)}(elts...; kw...)
 
 function Base.show(io::IO, node::AbstractNode)
     x = node.data

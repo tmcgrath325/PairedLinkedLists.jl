@@ -358,4 +358,16 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsid
         push!(l, 3); push!(l, 1); push!(l, 2)
         @test collect(l) == [3, 2, 1]
     end
+
+    @testset "eltype inference" begin
+        l = SkipList(3, 1, 2)
+        @test eltype(l) == Int
+        @test collect(l) == [1, 2, 3]
+        l2 = SkipList(3, 1.0, 2)
+        @test eltype(l2) == Float64
+        @test collect(l2) == [1.0, 2.0, 3.0]
+        # keyword args are forwarded
+        l3 = SkipList(3, 1, 2; sortedby=-)
+        @test collect(l3) == [3, 2, 1]
+    end
 end

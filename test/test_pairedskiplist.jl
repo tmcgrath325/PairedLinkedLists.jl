@@ -333,4 +333,13 @@
             @test collect(l) == r
         end
     end
+
+    @testset "eltype inference" begin
+        l = PairedSkipList(3, 1, 2)
+        @test eltype(l) == Int
+        @test collect(l) == [1, 2, 3]
+        l2 = PairedSkipList(3, 1.0, 2)
+        @test eltype(l2) == Float64
+        @test collect(l2) == [1.0, 2.0, 3.0]
+    end
 end

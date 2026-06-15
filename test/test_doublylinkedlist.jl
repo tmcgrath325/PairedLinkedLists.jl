@@ -388,4 +388,17 @@
             @test collect(l) == r
         end
     end
+
+    @testset "eltype inference" begin
+        # homogeneous
+        l = DoublyLinkedList(1, 2, 3)
+        @test eltype(l) == Int
+        @test collect(l) == [1, 2, 3]
+        # promotable mixed types
+        l2 = DoublyLinkedList(1, 2.0, 3)
+        @test eltype(l2) == Float64
+        @test collect(l2) == [1.0, 2.0, 3.0]
+        # matches Base's promote_type behaviour for array literals
+        @test eltype(DoublyLinkedList(1, 2, 3)) == eltype([1, 2, 3])
+    end
 end
