@@ -143,7 +143,7 @@ See also [`ListNode`](@ref), [`SkipList`](@ref), [`PairedLinkedList`](@ref), [`T
 """
 mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
     len::Int
-    head::ListNode{T,DoublyLinkedList{T}}  
+    head::ListNode{T,DoublyLinkedList{T}}
     tail::ListNode{T,DoublyLinkedList{T}}
     function DoublyLinkedList{T}() where T
         l = new{T}(0)
@@ -375,12 +375,12 @@ See also [`PairedSkipList`](@ref), [`SkipNode`](@ref)
 mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
     len::Int
     nlevels::Int
-    skipfactor::Int
-    sortedby::F
-    head::SkipNode{T, SkipList{T,F}}
-    tail::SkipNode{T, SkipList{T,F}}
-    top::SkipNode{T, SkipList{T,F}}
-    toptail::SkipNode{T, SkipList{T,F}}
+    const skipfactor::Int
+    const sortedby::F
+    head::SkipNode{T,SkipList{T,F}}
+    tail::SkipNode{T,SkipList{T,F}}
+    top::SkipNode{T,SkipList{T,F}}
+    toptail::SkipNode{T,SkipList{T,F}}
     cache::Union{Nothing,SkipListCache{T}}
     function SkipList{T,F}(skipfactor::Int=2, sortedby::F=identity) where {T,F}
         l = new{T,F}(0,1,skipfactor,sortedby)
@@ -388,9 +388,6 @@ mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
         l.tail = SkipNode{T,SkipList{T,F}}(l)
         l.top = l.head
         l.toptail = l.tail
-        l.sortedby = sortedby
-        l.skipfactor = skipfactor
-        l.nlevels = 1
         l.head.next = l.tail
         l.tail.prev = l.head
         l.top.next = l.toptail
@@ -431,13 +428,13 @@ See also [`SkipList`](@ref), [`PairedSkipNode`](@ref)
 mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
     len::Int
     nlevels::Int
-    skipfactor::Int
-    sortedby::F
-    target::PairedSkipList{T, F}
-    head::PairedSkipNode{T, PairedSkipList{T,F}}
-    tail::PairedSkipNode{T, PairedSkipList{T,F}}
-    top::PairedSkipNode{T, PairedSkipList{T,F}}
-    toptail::PairedSkipNode{T, PairedSkipList{T,F}}
+    const skipfactor::Int
+    const sortedby::F
+    target::PairedSkipList{T,F}
+    head::PairedSkipNode{T,PairedSkipList{T,F}}
+    tail::PairedSkipNode{T,PairedSkipList{T,F}}
+    top::PairedSkipNode{T,PairedSkipList{T,F}}
+    toptail::PairedSkipNode{T,PairedSkipList{T,F}}
     cache::Union{Nothing,SkipListCache{T}}
     function PairedSkipList{T,F}(skipfactor::Int=2, sortedby::F=identity) where {T,F}
         l = new{T,F}(0,1,skipfactor,sortedby)
@@ -446,9 +443,6 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.tail = PairedSkipNode{T,PairedSkipList{T,F}}(l)
         l.top = l.head
         l.toptail = l.tail
-        l.sortedby = sortedby
-        l.skipfactor = skipfactor
-        l.nlevels = 1
         l.head.next = l.tail
         l.tail.prev = l.head
         l.top.next = l.toptail
@@ -462,9 +456,6 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.tail = PairedSkipNode{T,PairedSkipList{T,F}}(l)
         l.top = l.head
         l.toptail = l.tail
-        l.sortedby = sortedby
-        l.skipfactor = skipfactor
-        l.nlevels = 1
         l.head.next = l.tail
         l.tail.prev = l.head
         l.top.next = l.toptail
