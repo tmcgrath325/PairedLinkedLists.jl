@@ -195,6 +195,17 @@ function Base.hash(l::AbstractList, h::UInt)
     return h
 end
 
+"""
+    map(f, l::DoublyLinkedList)
+
+Apply `f` to each element of `l`, returning a new `DoublyLinkedList`.
+
+`map` is defined only for `DoublyLinkedList`. It is intentionally not provided for
+the other list types: an arbitrary `f` need not preserve a `SkipList`'s `sortedby`
+ordering, and mapping a [`PairedLinkedList`](@ref) or [`TargetedLinkedList`](@ref)
+would leave the new list's nodes without the cross-list `target` links that define
+those types. Build such a list explicitly instead.
+"""
 function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
     if isempty(l) && f isa Function
         S = Core.Compiler.return_type(f, Tuple{T})
