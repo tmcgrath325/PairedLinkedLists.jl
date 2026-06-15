@@ -347,4 +347,15 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsid
             @test skiplistsidentical(l, copyfromcache(l))
         end
     end
+
+    @testset "non-Function callable sortedby" begin
+        # sortedby accepts any callable, not just subtypes of Function
+        struct NegKey end
+        (::NegKey)(x) = -x
+        key = NegKey()
+        @test !(key isa Function)
+        l = SkipList{Int,NegKey}(2, key)
+        push!(l, 3); push!(l, 1); push!(l, 2)
+        @test collect(l) == [3, 2, 1]
+    end
 end
