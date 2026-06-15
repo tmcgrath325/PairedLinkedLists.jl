@@ -358,7 +358,7 @@ function copyfromcache(L::Type{<:AbstractSkipLinkedList{T,F}}, cache::SkipListCa
 end
 
 """
-    skiplistsidentical(l1::SkipList, l2::SkipList)
+    skiplistsidentical(l1::AbstractSkipLinkedList, l2::AbstractSkipLinkedList)
 
 Returns true if the two skip lists are identical, false otherwise. 
     
@@ -367,7 +367,7 @@ Because nodes are typically added at a random level, two skip lists constructed 
 
 See also [`copyfromcache`](@ref)
 """
-function skiplistsidentical(l1, l2)
+function skiplistsidentical(l1::AbstractSkipLinkedList, l2::AbstractSkipLinkedList)
     if (l1.len != l2.len) || (l1.nlevels != l2.nlevels)
         return false
     end
