@@ -281,7 +281,7 @@ function Base.copy!(l2::L, l::L) where L <: Union{DoublyLinkedList, TargetedLink
     return l2
 end
 function Base.copy(l::L) where L <: Union{DoublyLinkedList, SkipList, TargetedLinkedList}
-    l2 = L()
+    l2 = empty(l)
     hastarget(l) && addtarget!(l2, l.target)
     for n in ListNodeIterator(l)
         push!(l2, n.data)
@@ -335,8 +335,8 @@ function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
     return l2
 end
 function Base.copy(l::L) where L <: Union{PairedLinkedList, PairedSkipList}
-    l2 = L()
-    target2 = L()
+    l2 = empty(l)
+    target2 = empty(l.target)
     addtarget!(l2, target2)
     targetmap = Tuple{Int,nodetype(L)}[]
 
@@ -366,7 +366,10 @@ function Base.empty!(l::AbstractLinkedList)
     l.len = 0
     return l
 end
-Base.empty(::L) where L <: AbstractList = L()
+Base.empty(l::AbstractList) = (typeof(l))()
+# Skip lists carry an ordering key and skip factor that the inner constructor cannot
+# default for a non-`identity` `sortedby`; thread them through so the empty copy sorts identically.
+Base.empty(l::AbstractSkipLinkedList) = (typeof(l))(l.skipfactor, l.sortedby)
 
 """
     node = getnode(l::AbstractList, index)
@@ -390,9 +393,9 @@ function Base.getindex(l::AbstractList, idx::Int)
 end
 
 function Base.getindex(l::L, r::UnitRange) where L <: AbstractList
-    isempty(r) && return L()
+    isempty(r) && return empty(l)
     @boundscheck 0 < first(r) && last(r) <= l.len || throw(BoundsError(l, r))
-    l2 = L()
+    l2 = empty(l)
     @inbounds node = getnode(l, first(r))
     node2 = l2.head
     len = length(r)

@@ -342,4 +342,23 @@
         @test eltype(l2) == Float64
         @test collect(l2) == [1.0, 2.0, 3.0]
     end
+
+    @testset "copy/empty/getindex with non-identity sortedby" begin
+        l = PairedSkipList{Int}(3, 1, 2, 4; sortedby = -)
+        @test collect(l) == [4, 3, 2, 1]
+
+        l2 = copy(l)
+        @test collect(l2) == [4, 3, 2, 1]
+        @test l2.sortedby === l.sortedby
+
+        e = empty(l)
+        @test length(e) == 0
+        @test typeof(e) == typeof(l)
+        @test e.sortedby === l.sortedby
+        @test e.skipfactor == l.skipfactor
+
+        @test collect(l[2:3]) == [3, 2]
+        @test collect(l[2:1]) == Int[]
+        @test typeof(l[2:3]) == typeof(l)
+    end
 end

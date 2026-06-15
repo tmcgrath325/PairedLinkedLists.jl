@@ -370,4 +370,25 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsid
         l3 = SkipList(3, 1, 2; sortedby=-)
         @test collect(l3) == [3, 2, 1]
     end
+
+    @testset "copy/empty/getindex with non-identity sortedby" begin
+        l = SkipList{Int}(3, 1, 2, 4; sortedby = -)
+        @test collect(l) == [4, 3, 2, 1]
+
+        l2 = copy(l)
+        @test collect(l2) == [4, 3, 2, 1]
+        @test l2.sortedby === l.sortedby
+        push!(l2, 5)
+        @test collect(l) == [4, 3, 2, 1]   # copy is independent
+
+        e = empty(l)
+        @test length(e) == 0
+        @test typeof(e) == typeof(l)
+        @test e.sortedby === l.sortedby
+        @test e.skipfactor == l.skipfactor
+
+        @test collect(l[2:3]) == [3, 2]
+        @test collect(l[2:1]) == Int[]
+        @test typeof(l[2:3]) == typeof(l)
+    end
 end
