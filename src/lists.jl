@@ -226,7 +226,7 @@ ordering, and mapping a [`PairedLinkedList`](@ref) or [`TargetedLinkedList`](@re
 would leave the new list's nodes without the cross-list `target` links that define
 those types. Build such a list explicitly instead.
 """
-function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
+function Base.map(f, l::DoublyLinkedList{T}) where T
     if isempty(l) && f isa Function
         S = Base.promote_op(f, T)
         return DoublyLinkedList{S}()
