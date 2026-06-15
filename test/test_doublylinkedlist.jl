@@ -89,6 +89,9 @@
                         setindex!(l, i - 2, i - 2)
                     end
                     @test lastindex(l) == i
+                    @test firstindex(l) == 1
+                    @test l[begin] == l[1]
+                    @test l[end] == l[i]
                     @test length(l) == i
                     @test isempty(l) == false
                     @test keys(l) == collect(1:i)

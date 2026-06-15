@@ -157,6 +157,7 @@ Base.IteratorSize(::ListDataIterator) = Base.SizeUnknown()
 Base.isempty(l::AbstractList) = l.len == 0
 Base.length(l::AbstractList) = l.len
 Base.eltype(::Type{<:AbstractList{T}}) where T = T
+Base.firstindex(l::AbstractList) = 1
 Base.lastindex(l::AbstractList) = l.len
 Base.keys(l::AbstractList) = LinearIndices(1:l.len)
 
