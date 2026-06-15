@@ -228,7 +228,7 @@ those types. Build such a list explicitly instead.
 """
 function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
     if isempty(l) && f isa Function
-        S = Core.Compiler.return_type(f, Tuple{T})
+        S = Base.promote_op(f, T)
         return DoublyLinkedList{S}()
     elseif isempty(l) && f isa Type
         return DoublyLinkedList{f}()
