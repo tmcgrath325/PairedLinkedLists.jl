@@ -592,121 +592,148 @@ end
 
 
 """
+    TargetKind
+
+Trait describing how a node or list participates in cross-list `target` links —
+the defining feature of this package. The kinds are [`Reciprocal`](@ref)
+(two-way links), [`OneWay`](@ref) (one-way links), and [`Untargeted`](@ref) (no
+links). `TargetKind(x)` reports the kind for a node or list `x`, and
+[`hastarget`](@ref), [`addtarget!`](@ref), and [`removetarget!`](@ref) dispatch
+on it.
+
+A type opts into targeting by defining `TargetKind(::Type{MyType})` to return
+`Reciprocal()` or `OneWay()` and providing a `target` field initialized to the
+object itself; pointing `target` at the object encodes the unlinked state.
+
+See also [`hastarget`](@ref), [`addtarget!`](@ref), [`removetarget!`](@ref).
+"""
+abstract type TargetKind end
+
+"""
+    Reciprocal <: TargetKind
+
+Two-way target links: [`addtarget!`](@ref) and [`removetarget!`](@ref) update
+both an object and its target, maintaining `x === x.target.target`.
+"""
+struct Reciprocal <: TargetKind end
+
+"""
+    OneWay <: TargetKind
+
+One-way target links: [`addtarget!`](@ref) and [`removetarget!`](@ref) update
+only the originating object, leaving its target unchanged.
+"""
+struct OneWay <: TargetKind end
+
+"""
+    Untargeted <: TargetKind
+
+No target links: [`hastarget`](@ref) is always `false` and the targeting
+mutators leave the object unchanged.
+"""
+struct Untargeted <: TargetKind end
+
+TargetKind(x) = TargetKind(typeof(x))
+TargetKind(::Type) = Untargeted()
+TargetKind(::Type{<:Union{AbstractPairedListNode, AbstractPairedSkipNode, AbstractPairedLinkedList, AbstractPairedSkipList}}) = Reciprocal()
+TargetKind(::Type{<:Union{AbstractTargetedListNode, AbstractTargetedLinkedList}}) = OneWay()
+
+"""
     hastarget(node) -> Bool
     hastarget(list) -> Bool
 
-Return `true` if the provided node or list has a target, and false otherwise.
+Return `true` if the provided node or list currently links to a target, and
+`false` otherwise.
 
-See also [`addtarget!`](@ref), [`removetarget!`](@ref)
+See also [`TargetKind`](@ref), [`addtarget!`](@ref), [`removetarget!`](@ref).
 """
-hastarget(obj::Union{AbstractPairedListNode, AbstractTargetedListNode, AbstractPairedLinkedList, AbstractTargetedLinkedList, AbstractPairedSkipNode, AbstractPairedSkipList}) = (obj.target !== obj)
-hastarget(::Union{ListNode, DoublyLinkedList, SkipNode, SkipList}) = false
+hastarget(x) = _hastarget(TargetKind(x), x)
+_hastarget(::Untargeted, x) = false
+_hastarget(::TargetKind, x) = x.target !== x
+
+# Establish (`_link!`) or clear (`_unlink!`) an object's own `target` field
+# according to its `TargetKind`. A `Reciprocal` object also updates the other
+# end; the unlinked state is encoded by pointing `target` at the object itself.
+_link!(::Reciprocal, obj, target) = (obj.target = target; target.target = obj; obj)
+_link!(::OneWay, obj, target) = (obj.target = target; obj)
+
+_unlink!(::Untargeted, obj) = obj
+_unlink!(::OneWay, obj) = (hastarget(obj) && (obj.target = obj); obj)
+function _unlink!(::Reciprocal, obj)
+    if hastarget(obj)
+        target = obj.target
+        obj.target = obj
+        target.target = target
+    end
+    return obj
+end
 
 """
     addtarget!(node, target_node)
     addtarget!(list, target_list)
 
-Add a link between a the provided node or list and another object of the same type to be assigned its `target`. 
+Link the provided node or list to `target`, assigning it as the object's
+`target`, and return the object.
 
-If the first object is a `PairedListNode' or a 'PairedLinkedList' and either object previously had a target, the prior link is removed.
+For a [`Reciprocal`](@ref) object (such as a `PairedListNode` or
+`PairedLinkedList`) the reverse link is established as well, and any prior target
+of either object is removed first. For a [`OneWay`](@ref) object (such as a
+`TargetedListNode` or `TargetedLinkedList`) only the object's own link is set and
+`target` is left unchanged.
 
-If the first object is a `TargetedListNode` or a `TargetedLinkedList`, the second object remains unchanged.
-
-See also [`hastarget`](@ref), [`removetarget!`](@ref)
+See also [`TargetKind`](@ref), [`hastarget`](@ref), [`removetarget!`](@ref).
 """
 function addtarget!(list::L, target::L) where L <: Union{AbstractPairedLinkedList, AbstractPairedSkipList}
-    if hastarget(list)     # remove existing targets
-        removetarget!(list)
-    end
-    if hastarget(target)
-        removetarget!(target)
-    end
-    list.target = target
-    target.target = list
-    return list
+    hastarget(list) && removetarget!(list)
+    hastarget(target) && removetarget!(target)
+    return _link!(TargetKind(list), list, target)
 end
 
 function addtarget!(node::N, target::N) where N <: Union{AbstractPairedListNode, AbstractPairedSkipNode}
     node.list.target === target.list || throw(ArgumentError("The provided node must belong to paired list."))
-    if hastarget(node)     # remove existing targets
-        removetarget!(node)
-    end
-    if hastarget(target)
-        removetarget!(target)
-    end
-    node.target = target
-    target.target = node
-    return node
+    hastarget(node) && removetarget!(node)
+    hastarget(target) && removetarget!(target)
+    return _link!(TargetKind(node), node, target)
 end
 
 function addtarget!(list::AbstractTargetedLinkedList{T,R}, target::R) where {T,R}
-    if hastarget(list)    # remove an existing target
-        removetarget!(list)
-    end
-    list.target = target
-    return list
+    hastarget(list) && removetarget!(list)
+    return _link!(TargetKind(list), list, target)
 end
 
 function addtarget!(node::AbstractTargetedListNode{T,N,L}, target::N) where {T,N,L}
     if hastarget(node.list)
         node.list.target === target.list || throw(ArgumentError("The provided node must belong to the list being targeted."))
     end
-    if hastarget(node)    # remove an existing target
+    hastarget(node) && removetarget!(node)
+    return _link!(TargetKind(node), node, target)
+end
+
+"""
+    removetarget!(node) -> node
+    removetarget!(list) -> list
+    removetarget!(list, idx::Int) -> node
+
+Remove the target link of the node or list (or of the `idx`-th node of `list`)
+and return the object whose link was removed. An object without a target is
+returned unchanged.
+
+For a [`Reciprocal`](@ref) object the reverse link is removed as well. Removing
+a list's target also removes the target link of each of its nodes.
+
+See also [`TargetKind`](@ref), [`hastarget`](@ref), [`addtarget!`](@ref).
+"""
+removetarget!(node::AbstractNode) = _unlink!(TargetKind(node), node)
+
+function removetarget!(list::AbstractList)
+    hastarget(list) || return list
+    _unlink!(TargetKind(list), list)
+    for node in ListNodeIterator(list)
         removetarget!(node)
     end
-    node.target = target
-    return node
-end
-
-"""
-    removetarget!(node)
-
-Remove the link between the node or list and its target (if the object is already paired) and return `node`.
-
-If the object is a `PairedListNode` or `PairedLinkedList`, the link will be deleted from both the object and its target.
-
-If the object is a `TargetedListNode` or `PairedLinkedList`, the link will be deleted from only the object.
-
-See also [`hastarget`](@ref), [`addtarget!`](@ref)
-"""
-function removetarget!(node::Union{AbstractPairedListNode, AbstractPairedSkipNode})
-    if hastarget(node)
-        target = node.target
-        node.target = node
-        target.target = target
-    end
-    return node
-end
-function removetarget!(node::AbstractTargetedListNode)
-    if hastarget(node)
-        node.target = node
-    end
-    return node
-end
-removetarget!(node::Union{ListNode,SkipNode}) = node;
-
-function removetarget!(list::Union{AbstractPairedLinkedList, AbstractPairedSkipList})
-    if hastarget(list)
-        target = list.target
-        list.target = list
-        target.target = target
-        for node in ListNodeIterator(list)
-            removetarget!(node)
-        end
-    end
-    return list
-end
-function removetarget!(list::AbstractTargetedLinkedList)
-    if hastarget(list)
-        list.target = list
-        for node in ListNodeIterator(list)
-            removetarget!(node)
-        end
-    end
     return list
 end
 
-function removetarget!(l::Union{AbstractPairedLinkedList,AbstractTargetedLinkedList,AbstractPairedSkipList}, idx::Int)
-    node = getnode(l, idx)
-    return removetarget!(node)
+function removetarget!(list::AbstractList, idx::Int)
+    return removetarget!(getnode(list, idx))
 end

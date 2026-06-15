@@ -6,6 +6,7 @@ tests = ["doublylinkedlist",
          "targetedlinkedlist",
          "skiplist",
          "pairedskiplist",
+         "targetkind",
         ]
 
 @testset "PairedLinkedLists" begin
