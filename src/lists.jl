@@ -621,8 +621,8 @@ function Base.splice!(l::L, r::AbstractUnitRange{<:Integer}, ins=_default_splice
     prev = len > 0 ? node.prev : node
     for i in 1:len
         push!(data, node.data)
-        node = node.next
         hastarget(node) && removetarget!(node)
+        node = node.next
     end
     next = len > 0 ? node : node.next
     if length(ins) == 0

@@ -318,6 +318,34 @@
                 @test l == PairedLinkedList{Int}(0)
                 @test l.len == 1
             end
+            @testset "range clears exactly the spliced nodes' targets" begin
+                l1 = PairedLinkedList{Int}(1:n...)
+                l2 = PairedLinkedList{Int}(1:n...)
+                addtarget!(l1, l2)
+                for i in 1:n
+                    addtarget!(getnode(l1, i), getnode(l2, i))
+                end
+                spliced = [getnode(l1, i) for i in 2:3]
+                survivoridx = (1, 4:n...)
+                survivors = [getnode(l1, i) for i in survivoridx]
+                partners = [getnode(l2, i) for i in 1:n]
+
+                @test splice!(l1, 2:3) == [2, 3]
+
+                # Each spliced node and its reciprocal partner lose the link.
+                for node in spliced
+                    @test !hastarget(node)
+                end
+                @test !hastarget(partners[2])
+                @test !hastarget(partners[3])
+
+                # Survivors keep their reciprocal targets intact.
+                for (node, i) in zip(survivors, survivoridx)
+                    @test hastarget(node)
+                    @test node.target === partners[i]
+                    @test partners[i].target === node
+                end
+            end
         end
 
         @testset "empty" begin
