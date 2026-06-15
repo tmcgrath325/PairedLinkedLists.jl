@@ -160,7 +160,24 @@ Base.eltype(::Type{<:AbstractList{T}}) where T = T
 Base.lastindex(l::AbstractList) = l.len
 Base.keys(l::AbstractList) = LinearIndices(1:l.len)
 
-Base.:(==)(n1::AbstractNode, n2::AbstractNode) = (hastarget(n1) || hastarget(n2) ? hastarget(n1) && hastarget(n2) && n1.target.data == n2.target.data : true) && n1.data == n2.data 
+Base.:(==)(n1::AbstractNode, n2::AbstractNode) = (hastarget(n1) || hastarget(n2) ? hastarget(n1) && hastarget(n2) && n1.target.data == n2.target.data : true) && n1.data == n2.data
+
+# `isequal`/`hash` are the strict pair Dict/Set rely on; the node `==` above is
+# loose. Compare leaf data with `isequal` so the cases that distinguish it from
+# `==` (signed zero, `NaN`) stay consistent with the hash below.
+function Base.isequal(n1::AbstractNode, n2::AbstractNode)
+    hastarget(n1) == hastarget(n2) || return false
+    hastarget(n1) && !isequal(n1.target.data, n2.target.data) && return false
+    return isequal(n1.data, n2.data)
+end
+
+function Base.hash(node::AbstractNode, h::UInt)
+    h = hash(node.data, h)
+    h = hash(hastarget(node), h)
+    hastarget(node) && (h = hash(node.target.data, h))
+    return h
+end
+
 Base.:(==)(l1::AbstractList{T}, l2::AbstractList{S}) where {T,S} = false
 
 function Base.:(==)(l1::AbstractList{T}, l2::AbstractList{T}) where T

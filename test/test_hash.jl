@@ -73,4 +73,54 @@
         d = Dict(dl => :found)
         @test d[pl] == :found        # cross-type lookup resolves
     end
+
+    @testset "nodes" begin
+        la = DoublyLinkedList{Int}(1:n...)
+        lb = DoublyLinkedList{Int}(1:n...)
+
+        @testset "equal nodes hash equally" begin
+            for i in 1:n
+                na = getnode(la, i)
+                nb = getnode(lb, i)
+                @test na == nb
+                @test isequal(na, nb)
+                @test hash(na) == hash(nb)
+            end
+            @test hash(getnode(la, 1)) != hash(getnode(la, 2))
+        end
+
+        @testset "target data participates" begin
+            a1 = PairedLinkedList{Int}(1, 2, 3); a2 = PairedLinkedList{Int}(10, 20, 30)
+            addtarget!(a1, a2); addtarget!(head(a1), head(a2))
+            b1 = PairedLinkedList{Int}(1, 2, 3); b2 = PairedLinkedList{Int}(10, 20, 30)
+            addtarget!(b1, b2); addtarget!(head(b1), head(b2))
+
+            # Same node data but a different linked-target's data.
+            c1 = PairedLinkedList{Int}(1, 2, 3); c2 = PairedLinkedList{Int}(99, 20, 30)
+            addtarget!(c1, c2); addtarget!(head(c1), head(c2))
+
+            # Same node data, no node-level target at all.
+            d1 = PairedLinkedList{Int}(1, 2, 3)
+
+            @test isequal(head(a1), head(b1)) && hash(head(a1)) == hash(head(b1))
+            @test !isequal(head(a1), head(c1)) && hash(head(a1)) != hash(head(c1))
+            @test !isequal(head(a1), head(d1)) && hash(head(a1)) != hash(head(d1))
+        end
+
+        @testset "strict pair distinguishes signed zero" begin
+            z1 = DoublyLinkedList{Float64}(0.0)
+            z2 = DoublyLinkedList{Float64}(-0.0)
+            @test head(z1) == head(z2)
+            @test !isequal(head(z1), head(z2))
+            @test hash(head(z1)) != hash(head(z2))
+        end
+
+        @testset "usable as Set elements and Dict keys" begin
+            na = getnode(la, 3)
+            nb = getnode(lb, 3)          # equal value, different list
+            @test length(Set([na, nb])) == 1
+            d = Dict(na => :found)
+            @test d[nb] == :found        # cross-node lookup resolves
+        end
+    end
 end
