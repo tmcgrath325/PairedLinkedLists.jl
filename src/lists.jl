@@ -76,7 +76,7 @@ isdisconnected(node::AbstractNode) = (node.prev === node && node.next === node) 
 # Iterating with a node returns the nodes themselves, and terminates at a list's tail
 Base.iterate(node::AbstractNode) = iterate(node, node)
 Base.iterate(::AbstractNode, node::AbstractNode) = attail(node) ? nothing : (node, node.next)
-Base.IteratorSize(::AbstractNode) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:AbstractNode}) = Base.SizeUnknown()
 """
     ListNodeIterator(start; rev=false)
 
@@ -112,7 +112,8 @@ function ListNodeIterator(l::AbstractList; rev::Bool = false)
 end
 Base.iterate(iter::ListNodeIterator) = iterate(iter, iter.start)
 Base.iterate(iter::ListNodeIterator{S}, node::S) where S = (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node, iter.rev ? node.prev : node.next)
-Base.IteratorSize(::ListNodeIterator) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:ListNodeIterator}) = Base.SizeUnknown()
+Base.eltype(::Type{ListNodeIterator{S}}) where S = S
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractList) = iterate(l, l.head.next)
@@ -152,7 +153,8 @@ function ListDataIterator(l::AbstractList{T}; rev::Bool = false) where T
 end
 Base.iterate(iter::ListDataIterator) = iterate(iter, iter.start)
 Base.iterate(iter::ListDataIterator{S}, node::S) where S =  (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node.data, iter.rev ? node.prev : node.next)
-Base.IteratorSize(::ListDataIterator) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:ListDataIterator}) = Base.SizeUnknown()
+Base.eltype(::Type{<:ListDataIterator{S}}) where {T,S<:AbstractNode{T}} = T
 
 Base.isempty(l::AbstractList) = l.len == 0
 Base.length(l::AbstractList) = l.len

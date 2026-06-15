@@ -50,6 +50,8 @@
                 for (i,data) in enumerate(ListDataIterator(l.tail.prev.prev; rev=true))
                     @test data == n-i
                 end
+                @test eltype(ListDataIterator(l)) == eltype(l)
+                @test eltype(collect(ListDataIterator(l))) == eltype(l)
             end
 
             @testset "nodes" begin
@@ -68,6 +70,8 @@
                 for (i,node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev=true))
                     @test node == newnode(l,n-i)
                 end
+                @test eltype(ListNodeIterator(l)) == typeof(l.head.next)
+                @test eltype(collect(ListNodeIterator(l))) == typeof(l.head.next)
             end
         end
 
