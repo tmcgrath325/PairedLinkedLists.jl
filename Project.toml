@@ -1,15 +1,18 @@
 name = "PairedLinkedLists"
 uuid = "7a42b37b-ed3b-477a-9848-3661f53bb718"
-authors = ["Tom McGrath <tmcgrath325@gmail.com> and contributors"]
 version = "0.3.0"
+authors = ["Tom McGrath <tmcgrath325@gmail.com> and contributors"]
 
 [deps]
 
 [compat]
+Aqua = "0.8"
+Test = "1"
 julia = "1.6"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Aqua", "Test"]

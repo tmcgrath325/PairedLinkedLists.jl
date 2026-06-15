@@ -4,6 +4,7 @@
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://tmcgrath325.github.io/PairedLinkedLists.jl/dev/)
 [![Build Status](https://github.com/tmcgrath325/PairedLinkedLists.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/tmcgrath325/PairedLinkedLists.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/tmcgrath325/PairedLinkedLists.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/tmcgrath325/PairedLinkedLists.jl)
+[![Aqua QA](https://juliatesting.github.io/Aqua.jl/dev/assets/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 This package provides a few implementations of doubly-linked lists in Julia:
 - `DoublyLinkedList`, a doubly-linked list with mutable nodes.

@@ -1,5 +1,6 @@
 using PairedLinkedLists
 using Test
+using Aqua
 
 tests = ["doublylinkedlist",
          "pairedlinkedlist",
@@ -18,5 +19,7 @@ for t in tests
     println("$fp ...")
     include(fp)
 end
+
+Aqua.test_all(PairedLinkedLists)
 
 end
