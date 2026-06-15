@@ -1,4 +1,4 @@
-using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsidentical
+using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsidentical, SkipListCache, copyfromcache
 
 @testset "SkipList" begin
 
