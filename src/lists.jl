@@ -379,7 +379,8 @@ function Base.getindex(l::AbstractList, idx::Int)
 end
 
 function Base.getindex(l::L, r::UnitRange) where L <: AbstractList
-    @boundscheck 0 < first(r) < last(r) <= l.len || throw(BoundsError(l, r))
+    isempty(r) && return L()
+    @boundscheck 0 < first(r) && last(r) <= l.len || throw(BoundsError(l, r))
     l2 = L()
     @inbounds node = getnode(l, first(r))
     node2 = l2.head
@@ -494,7 +495,8 @@ function Base.delete!(l::AbstractList, idx::Int)
 end
 
 function Base.delete!(l::AbstractList, r::UnitRange)
-    @boundscheck 0 < first(r) < last(r) <= l.len || throw(BoundsError(l, r))
+    isempty(r) && return l
+    @boundscheck 0 < first(r) && last(r) <= l.len || throw(BoundsError(l, r))
     @inbounds node = getnode(l, first(r))
     prev = node.prev
     len = length(r)

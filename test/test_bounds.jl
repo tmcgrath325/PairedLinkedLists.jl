@@ -45,4 +45,33 @@
         @test_throws BoundsError removetarget!(pl, 0)
         @test_throws BoundsError removetarget!(pl, length(pl) + 1)
     end
+
+    @testset "UnitRange getindex accepts single-element and empty ranges" begin
+        # The bounds condition previously used strict < between first and last,
+        # rejecting single-element ranges like l[3:3].
+        l = DoublyLinkedList{Int}(1:5...)
+        @test collect(l[3:3]) == [3]
+        @test collect(l[1:1]) == [1]
+        @test collect(l[5:5]) == [5]
+        @test collect(l[2:4]) == [2, 3, 4]
+        @test collect(l[1:5]) == [1, 2, 3, 4, 5]
+        @test isempty(l[3:2])       # empty range — consistent with Array
+        @test isempty(l[6:5])       # empty at one-past-end
+        @test_throws BoundsError l[0:2]
+        @test_throws BoundsError l[4:6]
+    end
+
+    @testset "UnitRange delete! accepts single-element and empty ranges" begin
+        l = DoublyLinkedList{Int}(1:5...)
+        delete!(l, 3:3)
+        @test collect(l) == [1, 2, 4, 5]
+
+        l2 = DoublyLinkedList{Int}(1:5...)
+        delete!(l2, 3:2)            # empty range — no-op
+        @test collect(l2) == [1, 2, 3, 4, 5]
+
+        l3 = DoublyLinkedList{Int}(1:5...)
+        delete!(l3, 2:4)
+        @test collect(l3) == [1, 5]
+    end
 end
