@@ -363,6 +363,7 @@ Base.empty(::L) where L <: AbstractList = L()
 Return the node at the specified index of the list.
 """
 function getnode(l::AbstractList, idx::Int)
+    @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = l.head
     for i in 1:idx
         node = node.next
@@ -394,6 +395,7 @@ function Base.getindex(l::L, r::UnitRange) where L <: AbstractList
 end
 
 function Base.setindex!(l::AbstractLinkedList{T}, data, idx::Int) where T
+    @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = getnode(l, idx)
     node.data = convert(T, data)
     return l
@@ -551,7 +553,9 @@ end
 function Base.insert!(l::AbstractLinkedList, idx::Int, data)
     @boundscheck 0 < idx <= l.len+1 || throw(BoundsError(l, idx))
     node = newnode(l, data)
-    next = getnode(l, idx)
+    # idx == l.len+1 inserts at the end: the successor is the tail sentinel,
+    # which getnode does not address.
+    next = idx == l.len+1 ? l.tail : getnode(l, idx)
     insertbefore!(node, next)
     return l
 end
