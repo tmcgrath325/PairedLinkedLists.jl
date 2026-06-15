@@ -573,4 +573,15 @@
             @test match
         end
     end
+
+    @testset "node construction" begin
+        l = PairedLinkedList{Int}()
+        # Both inner constructors (with and without data) must produce the same
+        # concrete type — the sentinel (no-data) form was previously hardcoded to
+        # PairedLinkedList{T} regardless of L.
+        sentinel = PairedListNode{Int,PairedLinkedList{Int}}(l)
+        data_node = PairedListNode{Int,PairedLinkedList{Int}}(l, 1)
+        @test typeof(sentinel) == typeof(data_node)
+        @test typeof(sentinel) == PairedListNode{Int,PairedLinkedList{Int}}
+    end
 end

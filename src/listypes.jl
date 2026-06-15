@@ -71,7 +71,7 @@ mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractPaire
     next::PairedListNode{T,L}
     target::PairedListNode{T,L}
     function PairedListNode{T,L}(list::L) where {T,L<:AbstractPairedLinkedList{T}}
-        node = new{T,PairedLinkedList{T}}(list)
+        node = new{T,L}(list)
         node.next = node
         node.prev = node
         node.target = node
