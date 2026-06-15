@@ -16,7 +16,7 @@ export AbstractSkipLinkedList, AbstractSkipList, AbstractPairedSkipList
 export DoublyLinkedList, PairedLinkedList, TargetedLinkedList, SkipList, PairedSkipList
 export head, tail, athead, attail, ListNodeIterator, ListDataIterator
 export nodetype, getnode, newnode, deletenode!, insertbefore!, insertafter!
-export hastarget, addtarget!, removetarget!
+export target, hastarget, addtarget!, removetarget!
 export TargetKind, Reciprocal, OneWay, Untargeted
 
 include("listypes.jl")

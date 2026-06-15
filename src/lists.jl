@@ -605,7 +605,8 @@ A type opts into targeting by defining `TargetKind(::Type{MyType})` to return
 `Reciprocal()` or `OneWay()` and providing a `target` field initialized to the
 object itself; pointing `target` at the object encodes the unlinked state.
 
-See also [`hastarget`](@ref), [`addtarget!`](@ref), [`removetarget!`](@ref).
+See also [`target`](@ref), [`hastarget`](@ref), [`addtarget!`](@ref),
+[`removetarget!`](@ref).
 """
 abstract type TargetKind end
 
@@ -650,6 +651,27 @@ See also [`TargetKind`](@ref), [`addtarget!`](@ref), [`removetarget!`](@ref).
 hastarget(x) = _hastarget(TargetKind(x), x)
 _hastarget(::Untargeted, x) = false
 _hastarget(::TargetKind, x) = x.target !== x
+
+"""
+    target(node) -> node_or_nothing
+    target(list) -> list_or_nothing
+
+Return the target of `node` or `list`, or `nothing` if no target is currently
+linked. For [`Reciprocal`](@ref) objects (`PairedListNode`, `PairedSkipNode`,
+`PairedLinkedList`, `PairedSkipList`) the link is bidirectional; for
+[`OneWay`](@ref) objects (`TargetedListNode`, `TargetedLinkedList`) it is
+one-directional. [`Untargeted`](@ref) objects always return `nothing`.
+
+This is the public accessor for the cross-list link; callers should use it
+rather than reading the `.target` field directly, as the unlinked state is
+encoded by a self-reference which `target` hides.
+
+See also [`TargetKind`](@ref), [`hastarget`](@ref), [`addtarget!`](@ref),
+[`removetarget!`](@ref).
+"""
+target(x) = _target(TargetKind(x), x)
+_target(::Untargeted, x) = nothing
+_target(::TargetKind, x) = hastarget(x) ? x.target : nothing
 
 # Establish (`_link!`) or clear (`_unlink!`) an object's own `target` field
 # according to its `TargetKind`. A `Reciprocal` object also updates the other
