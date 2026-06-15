@@ -171,6 +171,30 @@ function Base.:(==)(l1::AbstractList{T}, l2::AbstractList{T}) where T
     return true
 end
 
+# `isequal`/`hash` are the strict pair Dict/Set relies on; `==` above is loose.
+# Concrete list type is excluded: `==` spans concrete types, so hash must too.
+Base.isequal(l1::AbstractList{T}, l2::AbstractList{S}) where {T,S} = false
+
+function Base.isequal(l1::AbstractList{T}, l2::AbstractList{T}) where T
+    length(l1) == length(l2) || return false
+    for (n1, n2) in zip(ListNodeIterator(l1), ListNodeIterator(l2))
+        hastarget(n1) == hastarget(n2) || return false
+        hastarget(n1) && !isequal(n1.target.data, n2.target.data) && return false
+        isequal(n1.data, n2.data) || return false
+    end
+    return true
+end
+
+function Base.hash(l::AbstractList, h::UInt)
+    h = hash(eltype(l), h)
+    for node in ListNodeIterator(l)
+        h = hash(node.data, h)
+        h = hash(hastarget(node), h)
+        hastarget(node) && (h = hash(node.target.data, h))
+    end
+    return h
+end
+
 function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
     if isempty(l) && f isa Function
         S = Core.Compiler.return_type(f, Tuple{T})
