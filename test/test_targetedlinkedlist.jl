@@ -559,4 +559,13 @@
             @test targetsdata == [val for val in filter(x->x>0, p)]
         end
     end
+
+    @testset "node construction shorthand" begin
+        dl = DoublyLinkedList{Int}()
+        N = nodetype(DoublyLinkedList{Int})
+        tl = TargetedLinkedList(dl)
+        # TargetedListNode{T,N} shorthand fills in the list type parameter
+        @test TargetedListNode{Int,N}(tl) isa TargetedListNode{Int,N,typeof(tl)}
+        @test TargetedListNode{Int,N}(tl, 5) isa TargetedListNode{Int,N,typeof(tl)}
+    end
 end

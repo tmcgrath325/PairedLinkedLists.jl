@@ -190,6 +190,15 @@
             @test length(l) == n
             empty!(l)
             @test l == emptyl
+
+            # empty! on a list with a target re-establishes the target link
+            l1 = PairedSkipList{Int}(1:n...)
+            l2 = PairedSkipList{Int}(1:n...)
+            addtarget!(l1, l2)
+            @test hastarget(l1) && hastarget(l2)
+            empty!(l1)
+            @test isempty(l1)
+            @test hastarget(l1) && l1.target === l2
         end
 
         @testset "targets" begin

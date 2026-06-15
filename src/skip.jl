@@ -65,7 +65,7 @@ end
 
 function search(l::AbstractSkipLinkedList{T}, data::T) where T
     sdata = l.sortedby(data)
-    rn = getfirst(x -> l.sortedby(x.data) > sdata, l.top)
+    rn = getfirst(x -> l.sortedby(x.data) > sdata, l.nlevels > 1 ? l.top : l.head.next)
     rn = isnothing(rn) ? l.toptail : rn
     ln = rn.prev
     for i = l.nlevels-1:-1:1
@@ -148,27 +148,31 @@ function addlevel!(l::AbstractSkipLinkedList)
     return l
 end
 
-function removelevel!(l::AbstractSkipLinkedList)
-    l.nlevels <= 1 && throw(ErrorException("Cannot remove the only level of a skip list"))
-    for n in ListNodeIterator(l.top.next)
-        n.down.top = n.down
-    end
-    l.top = l.top.down
-    l.top.up = l.top
-    l.toptail = l.toptail.down
-    l.toptail.up = l.toptail
-    l.nlevels -= 1
-end
-
-function trimlevels!(l::AbstractSkipLinkedList)
-    while l.nlevels > 1 && l.top.next === l.toptail
-        l.top = l.top.down
-        l.top.up = l.top
-        l.toptail = l.toptail.down
-        l.toptail.up = l.toptail
-        l.nlevels -= 1
-    end
-end
+# removelevel! and trimlevels! are not currently called by any other function.
+# They may be useful in the future for maintaining a reasonable list height
+# when many nodes have been deleted.
+#
+# function removelevel!(l::AbstractSkipLinkedList)
+#     l.nlevels <= 1 && throw(ErrorException("Cannot remove the only level of a skip list"))
+#     for n in ListNodeIterator(l.top.next)
+#         n.down.top = n.down
+#     end
+#     l.top = l.top.down
+#     l.top.up = l.top
+#     l.toptail = l.toptail.down
+#     l.toptail.up = l.toptail
+#     l.nlevels -= 1
+# end
+#
+# function trimlevels!(l::AbstractSkipLinkedList)
+#     while l.nlevels > 1 && l.top.next === l.toptail
+#         l.top = l.top.down
+#         l.top.up = l.top
+#         l.toptail = l.toptail.down
+#         l.toptail.up = l.toptail
+#         l.nlevels -= 1
+#     end
+# end
 
 # generate a random level at which to insert a new node
 function randomlevel(max::Int, skipfactor::Int)

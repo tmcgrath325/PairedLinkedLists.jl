@@ -1,3 +1,5 @@
+using PairedLinkedLists: listtype, isdisconnected
+
 @testset "DoublyLinkedList" begin
 
     @testset "empty list" begin
@@ -431,5 +433,34 @@
         @test collect(l2) == [1.0, 2.0, 3.0]
         # matches Base's promote_type behaviour for array literals
         @test eltype(DoublyLinkedList(1, 2, 3)) == eltype([1, 2, 3])
+    end
+
+    @testset "listtype" begin
+        l = DoublyLinkedList{Int}(1, 2, 3)
+        node = l.head.next
+        @test listtype(node) === DoublyLinkedList{Int}
+        @test listtype(typeof(node)) === DoublyLinkedList{Int}
+    end
+
+    @testset "isdisconnected" begin
+        l = DoublyLinkedList{Int}(1, 2)
+        node = newnode(l, 99)
+        @test isdisconnected(node)
+        @test !isdisconnected(l.head.next)
+    end
+
+    @testset "cross-type equality" begin
+        li = DoublyLinkedList{Int}(1, 2, 3)
+        lf = DoublyLinkedList{Float64}(1.0, 2.0, 3.0)
+        @test li != lf
+        @test !isequal(li, lf)
+        @test isequal(DoublyLinkedList{Int}(1, 2), DoublyLinkedList{Int}(1, 2))
+        @test DoublyLinkedList{Int}(1, 2) == DoublyLinkedList{Int}(1, 2)
+    end
+
+    @testset "hastarget on untargeted types" begin
+        l = DoublyLinkedList{Int}(1, 2)
+        @test !hastarget(l)
+        @test !hastarget(l.head.next)
     end
 end

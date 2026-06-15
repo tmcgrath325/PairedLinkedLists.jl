@@ -357,6 +357,15 @@
             @test length(l) == n
             empty!(l)
             @test l == emptyl
+
+            # empty! on a list with a target re-establishes the target link
+            l1 = PairedLinkedList{Int}(1:n...)
+            l2 = PairedLinkedList{Int}(1:n...)
+            addtarget!(l1, l2)
+            @test hastarget(l1) && hastarget(l2)
+            empty!(l1)
+            @test isempty(l1)
+            @test hastarget(l1) && l1.target === l2
         end
 
         @testset "targets" begin
@@ -611,5 +620,21 @@
         data_node = PairedListNode{Int,PairedLinkedList{Int}}(l, 1)
         @test typeof(sentinel) == typeof(data_node)
         @test typeof(sentinel) == PairedListNode{Int,PairedLinkedList{Int}}
+        # PairedListNode{T} shorthand fills in the list type parameter
+        @test PairedListNode{Int}(l) isa PairedListNode{Int,PairedLinkedList{Int}}
+        @test PairedListNode{Int}(l, 5) isa PairedListNode{Int,PairedLinkedList{Int}}
+    end
+
+    @testset "insertafter!/insertbefore! targeted node errors" begin
+        l1 = PairedLinkedList{Int}(1, 2, 3)
+        l2 = PairedLinkedList{Int}(1, 2, 3)
+        l3 = PairedLinkedList{Int}()
+        addtarget!(l1, l3)
+        node = getnode(l1, 1)
+        deletenode!(node)  # detach from l1; node.target reset to itself
+        # Assign a mismatched target directly: node.target.list is l2, but l1.target is l3
+        node.target = getnode(l2, 1)
+        @test_throws "targeted to a different list" insertafter!(node, l1.head)
+        @test_throws "targeted to a different list" insertbefore!(node, l1.tail)
     end
 end
