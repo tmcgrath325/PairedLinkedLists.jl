@@ -420,11 +420,20 @@ function Base.append!(l1::L, l2::L) where L <: AbstractLinkedList
     if hastarget(l2)
         l1.target === l2.target || throw(ArgumentError("The lists must have the same target to be combined."))
     end
+    isempty(l2) && return l1
     for node in ListNodeIterator(l2)
         node.list = l1
     end
-    tail(l1).next = head(l2)
-    tail(l2).next = l1.tail
+    # Splice l2's real nodes between l1's last real node and l1's tail sentinel,
+    # linking both directions. Reading through the sentinels (rather than head/tail,
+    # which throw on an empty list) makes an empty l1 fall out as a plain prepend.
+    firstl2 = l2.head.next
+    lastl2 = l2.tail.prev
+    lastl1 = l1.tail.prev
+    lastl1.next = firstl2
+    firstl2.prev = lastl1
+    lastl2.next = l1.tail
+    l1.tail.prev = lastl2
     l1.len += length(l2)
     return l1
 end

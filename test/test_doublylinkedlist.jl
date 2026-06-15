@@ -156,10 +156,34 @@
                     append!(l, l2)
                     @test l == DoublyLinkedList{Int}(1:2n...)
                     @test collect(l) == collect(DoublyLinkedList{Int}(1:2n...))
+                    # backward links must be spliced too, not just forward `.next`
+                    @test [node.data for node in ListNodeIterator(l; rev=true)] == collect(2n:-1:1)
+                    @test last(l) == 2n
                     l3 = DoublyLinkedList{Int}(1:n...)
                     append!(l3, n+1:2n...)
                     @test l3 == DoublyLinkedList{Int}(1:2n...)
                     @test collect(l3) == collect(DoublyLinkedList{Int}(1:2n...))
+
+                    # backward consistency exercised through pop! and reverse (mutating, so use fresh lists)
+                    lp = DoublyLinkedList{Int}(1:n...)
+                    append!(lp, DoublyLinkedList{Int}(n+1:2n...))
+                    @test pop!(lp) == 2n
+                    @test lp == DoublyLinkedList{Int}(1:2n-1...)
+                    lr = DoublyLinkedList{Int}(1:n...)
+                    append!(lr, DoublyLinkedList{Int}(n+1:2n...))
+                    @test collect(reverse(lr)) == collect(2n:-1:1)
+
+                    # empty operands behave like Base: no-op / prepend, never throw
+                    le1 = DoublyLinkedList{Int}()
+                    append!(le1, DoublyLinkedList{Int}(1:n...))
+                    @test le1 == DoublyLinkedList{Int}(1:n...)
+                    @test [node.data for node in ListNodeIterator(le1; rev=true)] == collect(n:-1:1)
+                    le2 = DoublyLinkedList{Int}(1:n...)
+                    append!(le2, DoublyLinkedList{Int}())
+                    @test le2 == DoublyLinkedList{Int}(1:n...)
+                    le3 = DoublyLinkedList{Int}()
+                    append!(le3, DoublyLinkedList{Int}())
+                    @test isempty(le3)
                 end
 
                 @testset "delete" begin
