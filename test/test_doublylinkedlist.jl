@@ -17,6 +17,17 @@
         @test_throws ArgumentError tail(l1)
     end
 
+    @testset "node construction" begin
+        l = DoublyLinkedList{Int}()
+        # The ListNode{T} outer constructor fills in the list parameter and must
+        # build a ListNode, not some other node type.
+        @test ListNode{Int}(l) isa ListNode{Int,DoublyLinkedList{Int}}
+        node = ListNode{Int}(l, 5)
+        @test node isa ListNode{Int,DoublyLinkedList{Int}}
+        @test node.data == 5
+        @test node.list === l
+    end
+
     @testset "core functionality" begin
         n = 10
 

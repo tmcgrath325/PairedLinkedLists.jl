@@ -46,7 +46,7 @@ mutable struct ListNode{T,L<:AbstractDoublyLinkedList{T}} <: AbstractListNode{T,
         return node
     end
 end
-ListNode{T}(args...) where T = PairedListNode{T,PairedLinkedList{T}}(args...)
+ListNode{T}(args...) where T = ListNode{T,DoublyLinkedList{T}}(args...)
 
 """
     node = PairedListNode(list::PairedLinkedList, data)
