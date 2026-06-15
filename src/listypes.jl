@@ -286,10 +286,10 @@ See also [`SkipList`](@ref), [`PairedSkipNode`](@ref)
 mutable struct SkipNode{T,L<:AbstractSkipList{T}} <: AbstractSkipNode{T,L}
     list::L
     data::T
-    prev::SkipNode{T}
-    next::SkipNode{T}
-    up::SkipNode{T}
-    down::SkipNode{T}
+    prev::SkipNode{T,L}
+    next::SkipNode{T,L}
+    up::SkipNode{T,L}
+    down::SkipNode{T,L}
     function SkipNode{T,L}(list::L) where {T,L<:AbstractSkipList{T}}
         node = new{T,L}(list)
         node.next = node

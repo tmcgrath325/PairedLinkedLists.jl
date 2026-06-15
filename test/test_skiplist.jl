@@ -2,6 +2,15 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsid
 
 @testset "SkipList" begin
 
+    @testset "concrete pointer field types" begin
+        # The prev/next/up/down links must carry the full SkipNode{T,L} type so
+        # the compiler can infer concrete types across pointer chains.
+        N = SkipNode{Int,SkipList{Int,typeof(identity)}}
+        for f in (:prev, :next, :up, :down)
+            @test isconcretetype(fieldtype(N, f))
+        end
+    end
+
     @testset "empty list" begin
         l1 = SkipList{Int}()
         @test iterate(l1) === nothing
