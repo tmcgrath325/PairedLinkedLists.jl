@@ -1,21 +1,35 @@
-abstract type AbstractNode{T,L} end 
+"""Root abstract type for all list nodes. `T` is the element type; `L` is the parent list type."""
+abstract type AbstractNode{T,L} end
 
+"""Abstract type for nodes of a doubly-linked list. `T` is the element type; `L` is the parent list type."""
 abstract type AbstractListNode{T,L} <: AbstractNode{T,L} end
+"""Abstract type for nodes with a reciprocal inter-list `target` link. `T` is the element type; `L` is the parent list type."""
 abstract type AbstractPairedListNode{T,L} <: AbstractListNode{T,L} end
+"""Abstract type for nodes with a one-way inter-list `target` link. `T` is the element type; `N` is the target node type; `L` is the parent list type."""
 abstract type AbstractTargetedListNode{T,N,L} <: AbstractListNode{T,L} end
 
+"""Abstract type for nodes of a skip list. `T` is the element type; `L` is the parent list type."""
 abstract type AbstractSkipNode{T,L} <: AbstractNode{T,L} end
+"""Abstract type for skip-list nodes with a reciprocal inter-list `target` link. `T` is the element type; `L` is the parent list type."""
 abstract type AbstractPairedSkipNode{T,L} <: AbstractSkipNode{T,L} end
 
+"""Root abstract type for all list containers. `T` is the element type."""
 abstract type AbstractList{T} end
 
+"""Abstract type for linked-list containers. `T` is the element type."""
 abstract type AbstractLinkedList{T} <: AbstractList{T} end
+"""Abstract type for plain doubly-linked lists. `T` is the element type."""
 abstract type AbstractDoublyLinkedList{T} <: AbstractLinkedList{T} end
+"""Abstract type for doubly-linked lists whose nodes carry a reciprocal inter-list `target` link. `T` is the element type."""
 abstract type AbstractPairedLinkedList{T} <: AbstractLinkedList{T} end
+"""Abstract type for doubly-linked lists whose nodes carry a one-way inter-list `target` link. `T` is the element type; `N` is the target node type; `L` is the target list type."""
 abstract type AbstractTargetedLinkedList{T,N,L} <: AbstractPairedLinkedList{T} end
 
+"""Abstract type for skip-list-backed containers. `T` is the element type; `F` is the type of the `sortedby` key function."""
 abstract type AbstractSkipLinkedList{T,F} <: AbstractList{T} end
+"""Abstract type for skip lists. `T` is the element type; `F` is the type of the `sortedby` key function."""
 abstract type AbstractSkipList{T,F} <: AbstractSkipLinkedList{T,F} end
+"""Abstract type for skip lists whose nodes carry a reciprocal inter-list `target` link. `T` is the element type; `F` is the type of the `sortedby` key function."""
 abstract type AbstractPairedSkipList{T,F} <: AbstractSkipLinkedList{T,F} end
 
 """
@@ -56,7 +70,7 @@ contains the provided `data`, but it has no specific insertion point into `list`
 
 `node.prev` and `node.next` represent the previous and next nodes, respectively, of a list.
 
-A node's `target` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `target`
+A node's `target` should always either be a reference to itself (denoting an unpaired node) or a node belonging to the `target`
 of its parent `list`.
 
 The `target` link is assumed to be reciprocated for a `PairedListNode`. For example, `node === node.target.target` should be `true`.
@@ -88,18 +102,18 @@ end
 PairedListNode{T}(args...) where T = PairedListNode{T,PairedLinkedList{T}}(args...)
 
 """
-    node = TargetListNode(list::AbstractTargetLinkedList, data, [target::AbstractListNode])
+    node = TargetedListNode(list::AbstractTargetedLinkedList, data, [target::AbstractListNode])
 
-Create a `TargetedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list and 
+Create a `TargetedListNode` belonging to the specified `list`. The node contains a reference `list` to the parent list and
 contains the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
 
 `node.prev` and `node.next` represent the previous and next nodes, respectively, of a list.
 
-A node's `target` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `target`
+A node's `target` should always either be a reference to itself (denoting an unpaired node) or a node belonging to the `target`
 of its parent `list`.
 
-The `target` link is *not* assumed to be reciprocated for a `PairedListNode`, as the targeted node may not even have a `target` field. 
-For guranteed two-way inter-list links, see [`PairedListNode`](@ref).
+The `target` link is *not* assumed to be reciprocated for a `TargetedListNode`, as the targeted node may not even have a `target` field.
+For guaranteed two-way inter-list links, see [`PairedListNode`](@ref).
 
 See also [`TargetedLinkedList`](@ref), [`PairedListNode`](@ref), [`ListNode`](@ref).
 """
@@ -131,10 +145,10 @@ TargetedListNode{T,N}(args...) where {T,R,N<:AbstractNode{T,R}} = TargetedListNo
     l = DoublyLinkedList{::Type}()
     l = DoublyLinkedList(elts...)
 
-Create a `DoublyLinkedList` made up of [`ListNode`](@ref)s with with nodes containing data of a specified type.
+Create a `DoublyLinkedList` made up of [`ListNode`](@ref)s with nodes containing data of a specified type.
 
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
-`tail` at the end of the list . 
+`tail` at the end of the list.
 
 The first "real" node of a list `l` can be accessed with `l.head.next` or `head(l)`. Similarly, the last "real" node can
 be accessed with `l.tail.prev` or `tail(l)`.
@@ -169,16 +183,31 @@ DoublyLinkedList(elts...) = DoublyLinkedList{mapreduce(typeof, promote_type, elt
     l = PairedLinkedList{::Type}()
     l = PairedLinkedList{::Type}(elts...)
 
-Create a `PairedLinkedList` made up of [`PairListNode`](@ref)s containing data of a specified type. Each node can have an inter-list link
+Create a `PairedLinkedList` made up of [`PairedListNode`](@ref)s containing data of a specified type. Each node can have an inter-list link
 to a node belonging to the list's `target`.
 
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
-`tail` at the end of the list . 
+`tail` at the end of the list.
 
 The first "real" node of a list `l` can be accessed with `l.head.next` or `head(l)`. Similarly, the last "real" node can
 be accessed with `l.tail.prev` or `tail(l)`.
 
 See also [`PairedListNode`](@ref), [`PairedSkipList`](@ref), [`DoublyLinkedList`](@ref), [`TargetedLinkedList`](@ref)
+
+# Examples
+```jldoctest
+julia> l1 = PairedLinkedList{Int}(1, 2, 3);
+
+julia> l2 = PairedLinkedList{Int}(10, 20, 30);
+
+julia> addtarget!(l1, l2);
+
+julia> l1.target === l2
+true
+
+julia> l2.target === l1
+true
+```
 """
 mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
     len::Int
@@ -214,20 +243,41 @@ function PairedLinkedList{T}(elts...) where T
 end
 
 """
-    l = TargetLinkedList{T,R}()
-    l = TargetLinkedList{T,R}(elts...)
-    l = TargetLinkedList(list)
+    l = TargetedLinkedList{T,R}()
+    l = TargetedLinkedList{T,R}(elts...)
+    l = TargetedLinkedList(list)
 
-Create a `TargetLinkedList` made up of [`TargetedListNode`](@ref)s containing data of a specified type. Each node can have an inter-list link
+Create a `TargetedLinkedList` made up of [`TargetedListNode`](@ref)s containing data of a specified type. Each node can have an inter-list link
 to a node belonging to the list's `target`.
 
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
 `tail` at the end of the list. The list also contains a reference to its "target" list.
 
-The first "real" node of a list  `l` can be accessed with `l.head.next` or `head(l)`. 
+The first "real" node of a list `l` can be accessed with `l.head.next` or `head(l)`.
 Similarly, the last "real" node can be accessed with `l.tail.prev` or `tail(l)`.
 
 See also [`TargetedListNode`](@ref), [`DoublyLinkedList`](@ref), [`PairedLinkedList`](@ref)
+
+# Examples
+```jldoctest
+julia> base = DoublyLinkedList{Int}(1, 2, 3);
+
+julia> tl = TargetedLinkedList(base)
+TargetedLinkedList{Int64, DoublyLinkedList{Int64}, ListNode{Int64, DoublyLinkedList{Int64}}}()
+
+julia> push!(tl, 10); push!(tl, 20); push!(tl, 30);
+
+julia> collect(tl)
+3-element Vector{Int64}:
+ 10
+ 20
+ 30
+
+julia> addtarget!(getnode(tl, 1), getnode(base, 2));
+
+julia> getnode(tl, 1).target.data
+2
+```
 """
 mutable struct TargetedLinkedList{T,R<:AbstractList{T},N<:AbstractNode{T,R}} <: AbstractTargetedLinkedList{T,R,N}
     len::Int
@@ -279,7 +329,7 @@ SkipListCache{T}() where T = SkipListCache{T}(T[],Int[])
 Create a `SkipNode` belonging to the specified `list`. The node contains a reference `list` to the parent [skip list](https://en.wikipedia.org/wiki/Skip_list)
 and contains the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
 
-`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list. `node.up` and `node.bottom` represent the nodes in adjacent levels
+`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list. `node.up` and `node.down` represent the nodes in adjacent levels
 within the skip list data structure.
 
 See also [`SkipList`](@ref), [`PairedSkipNode`](@ref)
@@ -310,12 +360,12 @@ mutable struct SkipNode{T,L<:AbstractSkipList{T}} <: AbstractSkipNode{T,L}
 end
 
 """
-    node = PairedSkipNode(list::SkipList [, data])
+    node = PairedSkipNode(list::PairedSkipList [, data])
 
 Create a `PairedSkipNode` belonging to the specified `list`. The node contains a reference `list` to the parent [skip list](https://en.wikipedia.org/wiki/Skip_list)
 and contains the provided `data`, but it has no specific insertion point into `list` (see [`insertafter!`](@ref)).
 
-`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list. `node.up` and `node.bottom` represent the nodes in adjacent levels
+`node.prev` and `node.next` represent the previous and next nodes, respectively, of a list. `node.up` and `node.down` represent the nodes in adjacent levels
 within the skip list data structure.
 
 A node's `target` should always either be a reference to itself (denoting unpaired node) or a node belonging to the `target`
@@ -357,7 +407,7 @@ end
     l = SkipList{::Type}(; sortedby=identity, skipfactor=2)
     l = SkipList{::Type}(elts...; sortedby=identity, skipfactor=2)
 
-Create a `SkipList` made of up [SkipNode](@ref)s containing data of a specified type.
+Create a `SkipList` made up of [`SkipNode`](@ref)s containing data of a specified type.
 
 The list contains a "dummy" node `head` at the beginning of the list and a "dummy" node `tail` at the end of the list.
 
@@ -366,11 +416,24 @@ The node at the head of the topmost level of the datastructure can be accessed b
 The first "real" node of a list `l` can be accessed with `l.head.next` or `head(l)`. Similarly, the last "real" node can
 be accessed with `l.tail.prev` or `tail(l)`.
 
-The `skipfactor` of the list describes the average number of nodes "skipped" by the above level.
-
-The ordering of the list can be specified by a function, `sortedby`.
+The `skipfactor` controls the average branching ratio between levels (default: 2).
+The `sortedby` function determines the sort key applied to each element (default: `identity`).
 
 See also [`PairedSkipList`](@ref), [`SkipNode`](@ref)
+
+# Examples
+```jldoctest
+julia> l = SkipList{Int}(3, 1, 4, 1, 5, 9);
+
+julia> collect(l)
+6-element Vector{Int64}:
+ 1
+ 1
+ 3
+ 4
+ 5
+ 9
+```
 """
 mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
     len::Int
@@ -416,12 +479,11 @@ to a node belonging to the list's `target`.
 The list contains its length `len`, a "dummy" node `head` at the beginning of the list, and a "dummy" node
 `tail` at the end of the list. The list also contains a reference to its "target" list.
 
-The first "real" node of a list  `l` can be accessed with `l.head.next`. Similarly, the last "real" node can
-be accessed with `l.tail.prev`.
+The first "real" node of a list `l` can be accessed with `l.head.next` or `head(l)`.
+Similarly, the last "real" node can be accessed with `l.tail.prev` or `tail(l)`.
 
-The `skipfactor` of the list describes the average number of nodes "skipped" by the above level.
-
-The ordering of the list can be specified by a function, `sortedby`.
+The `skipfactor` controls the average branching ratio between levels (default: 2).
+The `sortedby` function determines the sort key applied to each element (default: `identity`).
 
 See also [`SkipList`](@ref), [`PairedSkipNode`](@ref)
 """

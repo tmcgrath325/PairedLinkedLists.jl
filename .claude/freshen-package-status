@@ -8,6 +8,6 @@ Optional: API review
 Optional: integration review
 DONE: enforce generic indexing
 DONE: improve test coverage
-TODO: add and improve docstrings
+DONE: add and improve docstrings
 TODO: add or improve documentation
 TODO: format with runic
