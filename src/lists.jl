@@ -33,9 +33,9 @@ tail(l::AbstractList) = l.len < 1 ? throw(ArgumentError("List must be non-empty"
 
 Return the type of the nodes contained in the list.
 """
-nodetype(::Type{<:DoublyLinkedList{T}}) where T = ListNode{T,DoublyLinkedList{T}}
-nodetype(::Type{<:PairedLinkedList{T}}) where T = PairedListNode{T,PairedLinkedList{T}}
-nodetype(::Type{<:TargetedLinkedList{T,R,N}}) where {T,R,N} = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}
+nodetype(::Type{<:DoublyLinkedList{T}}) where {T} = ListNode{T, DoublyLinkedList{T}}
+nodetype(::Type{<:PairedLinkedList{T}}) where {T} = PairedListNode{T, PairedLinkedList{T}}
+nodetype(::Type{<:TargetedLinkedList{T, R, N}}) where {T, R, N} = TargetedListNode{T, N, TargetedLinkedList{T, R, N}}
 nodetype(l::AbstractList) = nodetype(typeof(l))
 
 """
@@ -44,7 +44,7 @@ nodetype(l::AbstractList) = nodetype(typeof(l))
 
 Return the type of list that can contain the provided type of node.
 """
-listtype(::Type{<:AbstractNode{T,L}}) where {T,L} = L
+listtype(::Type{<:AbstractNode{T, L}}) where {T, L} = L
 listtype(n::AbstractNode) = listtype(typeof(n))
 
 
@@ -97,13 +97,13 @@ itself is not yielded). `start` and `stop` must belong to the same list.
 If `rev` is `true`, the iterator advances toward the head of the list;
 otherwise it advances toward the tail.
 """
-struct ListNodeIterator{S<:AbstractNode}
+struct ListNodeIterator{S <: AbstractNode}
     start::S
     stop::S
     rev::Bool
-    function ListNodeIterator(start::S, stop::Union{Nothing,S}=nothing; rev::Bool = false) where S
-        stopnode::S = !isnothing(stop) ? stop : 
-            (rev ? start.list.head : start.list.tail) 
+    function ListNodeIterator(start::S, stop::Union{Nothing, S} = nothing; rev::Bool = false) where {S}
+        stopnode::S = !isnothing(stop) ? stop :
+            (rev ? start.list.head : start.list.tail)
         start.list === stopnode.list || throw(ArgumentError("The starting and stopping nodes must belong to the same list."))
         return new{S}(start, stopnode, rev)
     end
@@ -144,14 +144,14 @@ julia> [node.data for node in ListNodeIterator(getnode(l, 2), getnode(l, 4))]
 """
 function ListNodeIterator(l::AbstractList; rev::Bool = false)
     start = rev ? l.tail.prev : l.head.next
-    stop = l.len == 0 ? start : 
+    stop = l.len == 0 ? start :
         (rev ? l.head : l.tail)
     return ListNodeIterator(start, stop; rev = rev)
 end
 Base.iterate(iter::ListNodeIterator) = iterate(iter, iter.start)
-Base.iterate(iter::ListNodeIterator{S}, node::S) where S = (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node, iter.rev ? node.prev : node.next)
+Base.iterate(iter::ListNodeIterator{S}, node::S) where {S} = (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node, iter.rev ? node.prev : node.next)
 Base.IteratorSize(::Type{<:ListNodeIterator}) = Base.SizeUnknown()
-Base.eltype(::Type{ListNodeIterator{S}}) where S = S
+Base.eltype(::Type{ListNodeIterator{S}}) where {S} = S
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractList) = iterate(l, l.head.next)
@@ -168,13 +168,13 @@ itself is not yielded). `start` and `stop` must belong to the same list.
 If `rev` is `true`, the iterator advances toward the head of the list;
 otherwise it advances toward the tail.
 """
-struct ListDataIterator{S<:AbstractNode}
+struct ListDataIterator{S <: AbstractNode}
     start::S
     stop::S
     rev::Bool
-    function ListDataIterator(start::S, stop::Union{Nothing,S}=nothing; rev::Bool = false) where S
-        stopnode::S = !isnothing(stop) ? stop : 
-            (rev ? start.list.head : start.list.tail) 
+    function ListDataIterator(start::S, stop::Union{Nothing, S} = nothing; rev::Bool = false) where {S}
+        stopnode::S = !isnothing(stop) ? stop :
+            (rev ? start.list.head : start.list.tail)
         start.list === stopnode.list || throw(ArgumentError("The starting and stopping nodes must belong to the same list."))
         return new{S}(start, stopnode, rev)
     end
@@ -187,20 +187,20 @@ Return an iterator over the data values of a linked list.
 If `rev` is `true`, the iterator starts at the tail and advances toward the head;
 otherwise it starts at the head and advances toward the tail.
 """
-function ListDataIterator(l::AbstractList{T}; rev::Bool = false) where T
+function ListDataIterator(l::AbstractList{T}; rev::Bool = false) where {T}
     start = rev ? l.tail.prev : l.head.next
-    stop = l.len == 0 ? start : 
+    stop = l.len == 0 ? start :
         (rev ? l.head : l.tail)
     return ListDataIterator(start, stop; rev = rev)
 end
 Base.iterate(iter::ListDataIterator) = iterate(iter, iter.start)
-Base.iterate(iter::ListDataIterator{S}, node::S) where S =  (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node.data, iter.rev ? node.prev : node.next)
+Base.iterate(iter::ListDataIterator{S}, node::S) where {S} = (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node.data, iter.rev ? node.prev : node.next)
 Base.IteratorSize(::Type{<:ListDataIterator}) = Base.SizeUnknown()
-Base.eltype(::Type{<:ListDataIterator{S}}) where {T,S<:AbstractNode{T}} = T
+Base.eltype(::Type{<:ListDataIterator{S}}) where {T, S <: AbstractNode{T}} = T
 
 Base.isempty(l::AbstractList) = l.len == 0
 Base.length(l::AbstractList) = l.len
-Base.eltype(::Type{<:AbstractList{T}}) where T = T
+Base.eltype(::Type{<:AbstractList{T}}) where {T} = T
 Base.firstindex(l::AbstractList) = 1
 Base.lastindex(l::AbstractList) = l.len
 Base.keys(l::AbstractList) = LinearIndices(1:l.len)
@@ -223,9 +223,9 @@ function Base.hash(node::AbstractNode, h::UInt)
     return h
 end
 
-Base.:(==)(l1::AbstractList{T}, l2::AbstractList{S}) where {T,S} = false
+Base.:(==)(l1::AbstractList{T}, l2::AbstractList{S}) where {T, S} = false
 
-function Base.:(==)(l1::AbstractList{T}, l2::AbstractList{T}) where T
+function Base.:(==)(l1::AbstractList{T}, l2::AbstractList{T}) where {T}
     length(l1) == length(l2) || return false
     for (i, j) in zip(ListNodeIterator(l1), ListNodeIterator(l2))
         i == j || return false
@@ -235,9 +235,9 @@ end
 
 # `isequal`/`hash` are the strict pair Dict/Set relies on; `==` above is loose.
 # Concrete list type is excluded: `==` spans concrete types, so hash must too.
-Base.isequal(l1::AbstractList{T}, l2::AbstractList{S}) where {T,S} = false
+Base.isequal(l1::AbstractList{T}, l2::AbstractList{S}) where {T, S} = false
 
-function Base.isequal(l1::AbstractList{T}, l2::AbstractList{T}) where T
+function Base.isequal(l1::AbstractList{T}, l2::AbstractList{T}) where {T}
     length(l1) == length(l2) || return false
     for (n1, n2) in zip(ListNodeIterator(l1), ListNodeIterator(l2))
         hastarget(n1) == hastarget(n2) || return false
@@ -268,7 +268,7 @@ ordering, and mapping a [`PairedLinkedList`](@ref) or [`TargetedLinkedList`](@re
 would leave the new list's nodes without the cross-list `target` links that define
 those types. Build such a list explicitly instead.
 """
-function Base.map(f, l::DoublyLinkedList{T}) where T
+function Base.map(f, l::DoublyLinkedList{T}) where {T}
     if isempty(l) && f isa Function
         S = Base.promote_op(f, T)
         return DoublyLinkedList{S}()
@@ -291,7 +291,7 @@ function Base.map(f, l::DoublyLinkedList{T}) where T
     end
 end
 
-function Base.filter!(f::Function, l::L) where L <: AbstractLinkedList
+function Base.filter!(f::Function, l::L) where {L <: AbstractLinkedList}
     for n in ListNodeIterator(l)
         if !f(n.data)
             deletenode!(n)
@@ -301,13 +301,13 @@ function Base.filter!(f::Function, l::L) where L <: AbstractLinkedList
 end
 Base.filter(f::Function, l::AbstractLinkedList) = return filter!(f, copy(l))
 
-function Base.reverse!(l::L) where L <: AbstractLinkedList
+function Base.reverse!(l::L) where {L <: AbstractLinkedList}
     prevprevnode = l.tail
     prevnode = l.tail
     oldtail = tail(l)
-    for (i,n) in enumerate(ListNodeIterator(l))
+    for (i, n) in enumerate(ListNodeIterator(l))
         prevnode.prev = n
-        if i>1
+        if i > 1
             prevnode.next = prevprevnode
         end
         prevprevnode = prevnode
@@ -321,12 +321,12 @@ function Base.reverse!(l::L) where L <: AbstractLinkedList
 end
 Base.reverse(l::AbstractLinkedList) = return reverse!(copy(l))
 
-function Base.copy!(l2::L, l::L) where L <: Union{DoublyLinkedList, TargetedLinkedList}
+function Base.copy!(l2::L, l::L) where {L <: Union{DoublyLinkedList, TargetedLinkedList}}
     hastarget(l) && addtarget!(l2, l.target)
     len = l2.len
     existingnode = l2.head
-    for (i,n) in enumerate(ListNodeIterator(l))
-        if i<=len
+    for (i, n) in enumerate(ListNodeIterator(l))
+        if i <= len
             existingnode = existingnode.next
             existingnode.data = n.data
             hastarget(n) && addtarget!(existingnode, n.target)
@@ -335,14 +335,14 @@ function Base.copy!(l2::L, l::L) where L <: Union{DoublyLinkedList, TargetedLink
             hastarget(n) && addtarget!(tail(l2), n.target)
         end
     end
-    if l.len < len 
+    if l.len < len
         existingnode.next = l2.tail
         l2.tail.prev = existingnode
         l2.len = l.len
     end
     return l2
 end
-function Base.copy(l::L) where L <: Union{DoublyLinkedList, SkipList, TargetedLinkedList}
+function Base.copy(l::L) where {L <: Union{DoublyLinkedList, SkipList, TargetedLinkedList}}
     l2 = empty(l)
     hastarget(l) && addtarget!(l2, l.target)
     for n in ListNodeIterator(l)
@@ -352,43 +352,43 @@ function Base.copy(l::L) where L <: Union{DoublyLinkedList, SkipList, TargetedLi
     return l2
 end
 
-function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
+function Base.copy!(l2::L, l::L) where {L <: PairedLinkedList}
     !hastarget(l2) && addtarget!(l2, L())
     target2 = l2.target
     len = l2.len
     plen = target2.len
-    targetmap = Tuple{Int,nodetype(L)}[]
+    targetmap = Tuple{Int, nodetype(L)}[]
 
     existingnode = l2.head
-    for (i,n) in enumerate(ListNodeIterator(l))
-        if i<=len
+    for (i, n) in enumerate(ListNodeIterator(l))
+        if i <= len
             existingnode = existingnode.next
             existingnode.data = n.data
         else
             push!(l2, n.data)
         end
-        hastarget(n) && push!(targetmap, (i,n.target))
+        hastarget(n) && push!(targetmap, (i, n.target))
     end
-    if l.len < len 
+    if l.len < len
         existingnode.next = l2.tail
         l2.tail.prev = existingnode
         l2.len = l.len
     end
     if hastarget(l2)
         existingnode = target2.head
-        for (i,n) in enumerate(ListNodeIterator(l.target))
-            if i<=plen
+        for (i, n) in enumerate(ListNodeIterator(l.target))
+            if i <= plen
                 existingnode = existingnode.next
                 existingnode.data = n.data
             else
                 push!(target2, n.data)
             end
             if hastarget(n)
-                targetidx = getfirst(x->n===x[2], targetmap)[1]
-                addtarget!(getnode(l2, targetidx), i<=plen ? existingnode : tail(target2))
+                targetidx = getfirst(x -> n === x[2], targetmap)[1]
+                addtarget!(getnode(l2, targetidx), i <= plen ? existingnode : tail(target2))
             end
         end
-        if l.target.len < plen 
+        if l.target.len < plen
             existingnode.next = target2.tail
             target2.tail.prev = existingnode
             target2.len = l.target.len
@@ -396,20 +396,20 @@ function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
     end
     return l2
 end
-function Base.copy(l::L) where L <: Union{PairedLinkedList, PairedSkipList}
+function Base.copy(l::L) where {L <: Union{PairedLinkedList, PairedSkipList}}
     l2 = empty(l)
     target2 = empty(l.target)
     addtarget!(l2, target2)
-    targetmap = Tuple{Int,nodetype(L)}[]
+    targetmap = Tuple{Int, nodetype(L)}[]
 
-    for (i,n) in enumerate(ListNodeIterator(l))
+    for (i, n) in enumerate(ListNodeIterator(l))
         push!(l2, n.data)
-        hastarget(n) && push!(targetmap, (i,n.target))
+        hastarget(n) && push!(targetmap, (i, n.target))
     end
     for n in ListNodeIterator(l.target)
         push!(target2, n.data)
         if hastarget(n)
-            targetidx = getfirst(x->n===x[2], targetmap)[1]
+            targetidx = getfirst(x -> n === x[2], targetmap)[1]
             addtarget!(getnode(l2, targetidx), tail(target2))
         end
     end
@@ -454,7 +454,7 @@ function Base.getindex(l::AbstractList, idx::Int)
     return node.data
 end
 
-function Base.getindex(l::L, r::UnitRange) where L <: AbstractList
+function Base.getindex(l::L, r::UnitRange) where {L <: AbstractList}
     isempty(r) && return empty(l)
     @boundscheck 0 < first(r) && last(r) <= l.len || throw(BoundsError(l, r))
     l2 = empty(l)
@@ -471,14 +471,14 @@ function Base.getindex(l::L, r::UnitRange) where L <: AbstractList
     return l2
 end
 
-function Base.setindex!(l::AbstractLinkedList{T}, data, idx::Int) where T
+function Base.setindex!(l::AbstractLinkedList{T}, data, idx::Int) where {T}
     @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = getnode(l, idx)
     node.data = convert(T, data)
     return l
 end
 
-function Base.append!(l1::L, l2::L) where L <: AbstractLinkedList
+function Base.append!(l1::L, l2::L) where {L <: AbstractLinkedList}
     if hastarget(l2)
         l1.target === l2.target || throw(ArgumentError("The lists must have the same target to be combined."))
     end
@@ -540,7 +540,7 @@ Insert `node` into a list after the preceding node `prev`, update the list's len
 
 `node` and `prev` must belong to the same list.
 """
-function insertafter!(node::N, prev::N) where N <: AbstractNode
+function insertafter!(node::N, prev::N) where {N <: AbstractNode}
     node.list === prev.list || throw(ArgumentError("The nodes must have the same parent list."))
     if hastarget(node)
         node.target.list === prev.list.target || throw(ArgumentError("The node cannot be added to a list that is targeted to a different list than the node."))
@@ -561,7 +561,7 @@ Insert `node` into a list before the subsequent node `next`, update the list's l
 
 `node` and `next` must belong to the same list.
 """
-function insertbefore!(node::N, next::N) where N <: AbstractNode
+function insertbefore!(node::N, next::N) where {N <: AbstractNode}
     node.list === next.list || throw(ArgumentError("The nodes must have the same parent list."))
     if hastarget(node)
         node.target.list === next.list.target || throw(ArgumentError("The node cannot be added to a list that is targeted to a different list than the node."))
@@ -645,25 +645,25 @@ function popat!(l::AbstractList, idx::Int)
 end
 
 function popat!(l::AbstractList, idx::Int, default)
-    if !(0 < idx <= l.len) 
-        return default;
+    if !(0 < idx <= l.len)
+        return default
     end
     return popat!(l, idx)
 end
 
 function Base.insert!(l::AbstractLinkedList, idx::Int, data)
-    @boundscheck 0 < idx <= l.len+1 || throw(BoundsError(l, idx))
+    @boundscheck 0 < idx <= l.len + 1 || throw(BoundsError(l, idx))
     node = newnode(l, data)
     # idx == l.len+1 inserts at the end: the successor is the tail sentinel,
     # which getnode does not address.
-    next = idx == l.len+1 ? l.tail : getnode(l, idx)
+    next = idx == l.len + 1 ? l.tail : getnode(l, idx)
     insertbefore!(node, next)
     return l
 end
 
 const _default_splice = []
 
-function Base.splice!(l::L, idx::Int, ins=_default_splice) where L <: AbstractLinkedList
+function Base.splice!(l::L, idx::Int, ins = _default_splice) where {L <: AbstractLinkedList}
     @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = getnode(l, idx)
     data = node.data
@@ -689,8 +689,8 @@ function Base.splice!(l::L, idx::Int, ins=_default_splice) where L <: AbstractLi
     return data
 end
 
-function Base.splice!(l::L, r::AbstractUnitRange{<:Integer}, ins=_default_splice) where {T, L <: AbstractLinkedList{T}}
-    @boundscheck (0 < first(r) <= l.len && last(r) <= l.len ) || throw(BoundsError(l, r))
+function Base.splice!(l::L, r::AbstractUnitRange{<:Integer}, ins = _default_splice) where {T, L <: AbstractLinkedList{T}}
+    @boundscheck (0 < first(r) <= l.len && last(r) <= l.len) || throw(BoundsError(l, r))
     len = length(r)
     data = Vector{T}()
     @inbounds node = getnode(l, first(r))
@@ -857,25 +857,25 @@ julia> getnode(l2, 2).target.data
 
 See also [`TargetKind`](@ref), [`hastarget`](@ref), [`removetarget!`](@ref).
 """
-function addtarget!(list::L, target::L) where L <: Union{AbstractPairedLinkedList, AbstractPairedSkipList}
+function addtarget!(list::L, target::L) where {L <: Union{AbstractPairedLinkedList, AbstractPairedSkipList}}
     hastarget(list) && removetarget!(list)
     hastarget(target) && removetarget!(target)
     return _link!(TargetKind(list), list, target)
 end
 
-function addtarget!(node::N, target::N) where N <: Union{AbstractPairedListNode, AbstractPairedSkipNode}
+function addtarget!(node::N, target::N) where {N <: Union{AbstractPairedListNode, AbstractPairedSkipNode}}
     node.list.target === target.list || throw(ArgumentError("The provided node must belong to paired list."))
     hastarget(node) && removetarget!(node)
     hastarget(target) && removetarget!(target)
     return _link!(TargetKind(node), node, target)
 end
 
-function addtarget!(list::AbstractTargetedLinkedList{T,R}, target::R) where {T,R}
+function addtarget!(list::AbstractTargetedLinkedList{T, R}, target::R) where {T, R}
     hastarget(list) && removetarget!(list)
     return _link!(TargetKind(list), list, target)
 end
 
-function addtarget!(node::AbstractTargetedListNode{T,N,L}, target::N) where {T,N,L}
+function addtarget!(node::AbstractTargetedListNode{T, N, L}, target::N) where {T, N, L}
     if hastarget(node.list)
         node.list.target === target.list || throw(ArgumentError("The provided node must belong to the list being targeted."))
     end

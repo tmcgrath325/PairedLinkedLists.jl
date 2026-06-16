@@ -3,9 +3,11 @@
         # getnode walks `.next` from the head sentinel; without a bounds check
         # an out-of-range index silently returns a sentinel node (garbage data)
         # or loops at the tail sentinel. An invalid index is a structural error.
-        for l in (DoublyLinkedList{Int}(1:5...),
-                  PairedLinkedList{Int}(1:5...),
-                  SkipList{Int}(1:5...))
+        for l in (
+                DoublyLinkedList{Int}(1:5...),
+                PairedLinkedList{Int}(1:5...),
+                SkipList{Int}(1:5...),
+            )
             @test_throws BoundsError getnode(l, 0)
             @test_throws BoundsError getnode(l, length(l) + 1)
             @test_throws BoundsError getnode(l, length(l) + 7)
