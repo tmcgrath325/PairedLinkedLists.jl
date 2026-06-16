@@ -1,17 +1,17 @@
 """Root abstract type for all list nodes. `T` is the element type; `L` is the parent list type."""
-abstract type AbstractNode{T,L} end
+abstract type AbstractNode{T, L} end
 
 """Abstract type for nodes of a doubly-linked list. `T` is the element type; `L` is the parent list type."""
-abstract type AbstractListNode{T,L} <: AbstractNode{T,L} end
+abstract type AbstractListNode{T, L} <: AbstractNode{T, L} end
 """Abstract type for nodes with a reciprocal inter-list `target` link. `T` is the element type; `L` is the parent list type."""
-abstract type AbstractPairedListNode{T,L} <: AbstractListNode{T,L} end
+abstract type AbstractPairedListNode{T, L} <: AbstractListNode{T, L} end
 """Abstract type for nodes with a one-way inter-list `target` link. `T` is the element type; `N` is the target node type; `L` is the parent list type."""
-abstract type AbstractTargetedListNode{T,N,L} <: AbstractListNode{T,L} end
+abstract type AbstractTargetedListNode{T, N, L} <: AbstractListNode{T, L} end
 
 """Abstract type for nodes of a skip list. `T` is the element type; `L` is the parent list type."""
-abstract type AbstractSkipNode{T,L} <: AbstractNode{T,L} end
+abstract type AbstractSkipNode{T, L} <: AbstractNode{T, L} end
 """Abstract type for skip-list nodes with a reciprocal inter-list `target` link. `T` is the element type; `L` is the parent list type."""
-abstract type AbstractPairedSkipNode{T,L} <: AbstractSkipNode{T,L} end
+abstract type AbstractPairedSkipNode{T, L} <: AbstractSkipNode{T, L} end
 
 """Root abstract type for all list containers. `T` is the element type."""
 abstract type AbstractList{T} end
@@ -23,14 +23,14 @@ abstract type AbstractDoublyLinkedList{T} <: AbstractLinkedList{T} end
 """Abstract type for doubly-linked lists whose nodes carry a reciprocal inter-list `target` link. `T` is the element type."""
 abstract type AbstractPairedLinkedList{T} <: AbstractLinkedList{T} end
 """Abstract type for doubly-linked lists whose nodes carry a one-way inter-list `target` link. `T` is the element type; `N` is the target node type; `L` is the target list type."""
-abstract type AbstractTargetedLinkedList{T,N,L} <: AbstractPairedLinkedList{T} end
+abstract type AbstractTargetedLinkedList{T, N, L} <: AbstractPairedLinkedList{T} end
 
 """Abstract type for skip-list-backed containers. `T` is the element type; `F` is the type of the `sortedby` key function."""
-abstract type AbstractSkipLinkedList{T,F} <: AbstractList{T} end
+abstract type AbstractSkipLinkedList{T, F} <: AbstractList{T} end
 """Abstract type for skip lists. `T` is the element type; `F` is the type of the `sortedby` key function."""
-abstract type AbstractSkipList{T,F} <: AbstractSkipLinkedList{T,F} end
+abstract type AbstractSkipList{T, F} <: AbstractSkipLinkedList{T, F} end
 """Abstract type for skip lists whose nodes carry a reciprocal inter-list `target` link. `T` is the element type; `F` is the type of the `sortedby` key function."""
-abstract type AbstractPairedSkipList{T,F} <: AbstractSkipLinkedList{T,F} end
+abstract type AbstractPairedSkipList{T, F} <: AbstractSkipLinkedList{T, F} end
 
 """
     node = ListNode(list::DoublyLinkedList [, data])
@@ -42,25 +42,25 @@ contains the provided `data`, but it has no specific insertion point into `list`
 
 See also [`DoublyLinkedList`](@ref), [`PairedListNode`](@ref), [`TargetedListNode`](@ref).
 """
-mutable struct ListNode{T,L<:AbstractDoublyLinkedList{T}} <: AbstractListNode{T,L}
+mutable struct ListNode{T, L <: AbstractDoublyLinkedList{T}} <: AbstractListNode{T, L}
     list::L
     data::T
-    prev::ListNode{T,L}
-    next::ListNode{T,L}
-    function ListNode{T,L}(list::L) where {T,L<:AbstractDoublyLinkedList{T}}
-        node = new{T,L}(list)
+    prev::ListNode{T, L}
+    next::ListNode{T, L}
+    function ListNode{T, L}(list::L) where {T, L <: AbstractDoublyLinkedList{T}}
+        node = new{T, L}(list)
         node.next = node
         node.prev = node
         return node
     end
-    function ListNode{T,L}(list::L, data) where {T,L<:AbstractDoublyLinkedList{T}}
-        node = new{T,L}(list, data)
+    function ListNode{T, L}(list::L, data) where {T, L <: AbstractDoublyLinkedList{T}}
+        node = new{T, L}(list, data)
         node.next = node
         node.prev = node
         return node
     end
 end
-ListNode{T}(args...) where T = ListNode{T,DoublyLinkedList{T}}(args...)
+ListNode{T}(args...) where {T} = ListNode{T, DoublyLinkedList{T}}(args...)
 
 """
     node = PairedListNode(list::PairedLinkedList, data)
@@ -78,28 +78,28 @@ For one-way inter-list links, see [`TargetedListNode`](@ref).
 
 See also [`PairedLinkedList`](@ref), [`ListNode`](@ref), [`TargetedListNode`](@ref).
 """
-mutable struct PairedListNode{T,L<:AbstractPairedLinkedList{T}} <: AbstractPairedListNode{T,L}
+mutable struct PairedListNode{T, L <: AbstractPairedLinkedList{T}} <: AbstractPairedListNode{T, L}
     list::L
     data::T
-    prev::PairedListNode{T,L}
-    next::PairedListNode{T,L}
-    target::PairedListNode{T,L}
-    function PairedListNode{T,L}(list::L) where {T,L<:AbstractPairedLinkedList{T}}
-        node = new{T,L}(list)
+    prev::PairedListNode{T, L}
+    next::PairedListNode{T, L}
+    target::PairedListNode{T, L}
+    function PairedListNode{T, L}(list::L) where {T, L <: AbstractPairedLinkedList{T}}
+        node = new{T, L}(list)
         node.next = node
         node.prev = node
         node.target = node
         return node
     end
-    function PairedListNode{T,L}(list::L, data) where {T,L<:AbstractPairedLinkedList{T}}
-        node = new{T,L}(list, data)
+    function PairedListNode{T, L}(list::L, data) where {T, L <: AbstractPairedLinkedList{T}}
+        node = new{T, L}(list, data)
         node.next = node
         node.prev = node
         node.target = node
         return node
     end
 end
-PairedListNode{T}(args...) where T = PairedListNode{T,PairedLinkedList{T}}(args...)
+PairedListNode{T}(args...) where {T} = PairedListNode{T, PairedLinkedList{T}}(args...)
 
 """
     node = TargetedListNode(list::AbstractTargetedLinkedList, data, [target::AbstractListNode])
@@ -117,28 +117,28 @@ For guaranteed two-way inter-list links, see [`PairedListNode`](@ref).
 
 See also [`TargetedLinkedList`](@ref), [`PairedListNode`](@ref), [`ListNode`](@ref).
 """
-mutable struct TargetedListNode{T,N<:AbstractNode{T},L<:AbstractList{T}} <: AbstractTargetedListNode{T,N,L}
+mutable struct TargetedListNode{T, N <: AbstractNode{T}, L <: AbstractList{T}} <: AbstractTargetedListNode{T, N, L}
     list::L
     data::T
-    prev::TargetedListNode{T,N,L}
-    next::TargetedListNode{T,N,L}
-    target::Union{N,TargetedListNode{T,N,L}}
-    function TargetedListNode{T,N,L}(list::L) where {T,N,L}
-        node = new{T,N,L}(list)
+    prev::TargetedListNode{T, N, L}
+    next::TargetedListNode{T, N, L}
+    target::Union{N, TargetedListNode{T, N, L}}
+    function TargetedListNode{T, N, L}(list::L) where {T, N, L}
+        node = new{T, N, L}(list)
         node.next = node
         node.prev = node
         node.target = node
         return node
     end
-    function TargetedListNode{T,N,L}(list::L, data) where {T,N,L}
-        node = new{T,N,L}(list, data)
+    function TargetedListNode{T, N, L}(list::L, data) where {T, N, L}
+        node = new{T, N, L}(list, data)
         node.next = node
         node.prev = node
         node.target = node
         return node
     end
 end
-TargetedListNode{T,N}(args...) where {T,R,N<:AbstractNode{T,R}} = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(args...)
+TargetedListNode{T, N}(args...) where {T, R, N <: AbstractNode{T, R}} = TargetedListNode{T, N, TargetedLinkedList{T, R, N}}(args...)
 
 
 """
@@ -157,12 +157,12 @@ See also [`ListNode`](@ref), [`SkipList`](@ref), [`PairedLinkedList`](@ref), [`T
 """
 mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
     len::Int
-    head::ListNode{T,DoublyLinkedList{T}}
-    tail::ListNode{T,DoublyLinkedList{T}}
-    function DoublyLinkedList{T}() where T
+    head::ListNode{T, DoublyLinkedList{T}}
+    tail::ListNode{T, DoublyLinkedList{T}}
+    function DoublyLinkedList{T}() where {T}
         l = new{T}(0)
-        l.head = ListNode{T,DoublyLinkedList{T}}(l)
-        l.tail = ListNode{T,DoublyLinkedList{T}}(l)
+        l.head = ListNode{T, DoublyLinkedList{T}}(l)
+        l.tail = ListNode{T, DoublyLinkedList{T}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
@@ -170,7 +170,7 @@ mutable struct DoublyLinkedList{T} <: AbstractDoublyLinkedList{T}
 end
 
 DoublyLinkedList() = DoublyLinkedList{Any}()
-function DoublyLinkedList{T}(elts...) where T
+function DoublyLinkedList{T}(elts...) where {T}
     l = DoublyLinkedList{T}()
     for elt in elts
         push!(l, elt)
@@ -212,21 +212,21 @@ true
 mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
     len::Int
     target::PairedLinkedList{T}
-    head::PairedListNode{T,PairedLinkedList{T}}
-    tail::PairedListNode{T,PairedLinkedList{T}}
-    function PairedLinkedList{T}() where T
+    head::PairedListNode{T, PairedLinkedList{T}}
+    tail::PairedListNode{T, PairedLinkedList{T}}
+    function PairedLinkedList{T}() where {T}
         l = new{T}(0)
         l.target = l
-        l.head = PairedListNode{T,PairedLinkedList{T}}(l)
-        l.tail = PairedListNode{T,PairedLinkedList{T}}(l)
+        l.head = PairedListNode{T, PairedLinkedList{T}}(l)
+        l.tail = PairedListNode{T, PairedLinkedList{T}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
     end
-    function PairedLinkedList{T}(target::PairedLinkedList{T}) where T
+    function PairedLinkedList{T}(target::PairedLinkedList{T}) where {T}
         l = new{T}(0, target)
-        l.head = PairedListNode{T,PairedLinkedList{T}}(l)
-        l.tail = PairedListNode{T,PairedLinkedList{T}}(l)
+        l.head = PairedListNode{T, PairedLinkedList{T}}(l)
+        l.tail = PairedListNode{T, PairedLinkedList{T}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
@@ -234,7 +234,7 @@ mutable struct PairedLinkedList{T} <: AbstractPairedLinkedList{T}
 end
 
 PairedLinkedList() = PairedLinkedList{Any}()
-function PairedLinkedList{T}(elts...) where T
+function PairedLinkedList{T}(elts...) where {T}
     l = PairedLinkedList{T}()
     for elt in elts
         push!(l, elt)
@@ -279,39 +279,39 @@ julia> getnode(tl, 1).target.data
 2
 ```
 """
-mutable struct TargetedLinkedList{T,R<:AbstractList{T},N<:AbstractNode{T,R}} <: AbstractTargetedLinkedList{T,R,N}
+mutable struct TargetedLinkedList{T, R <: AbstractList{T}, N <: AbstractNode{T, R}} <: AbstractTargetedLinkedList{T, R, N}
     len::Int
-    target::Union{R,TargetedLinkedList{T,R,N}}
-    head::TargetedListNode{T,N,TargetedLinkedList{T,R,N}}
-    tail::TargetedListNode{T,N,TargetedLinkedList{T,R,N}}
-    function TargetedLinkedList{T,R,N}() where {T,R,N}
-        l = new{T,R,N}(0)
+    target::Union{R, TargetedLinkedList{T, R, N}}
+    head::TargetedListNode{T, N, TargetedLinkedList{T, R, N}}
+    tail::TargetedListNode{T, N, TargetedLinkedList{T, R, N}}
+    function TargetedLinkedList{T, R, N}() where {T, R, N}
+        l = new{T, R, N}(0)
         l.target = l
-        l.head = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(l)
-        l.tail = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(l)
+        l.head = TargetedListNode{T, N, TargetedLinkedList{T, R, N}}(l)
+        l.tail = TargetedListNode{T, N, TargetedLinkedList{T, R, N}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
     end
-    function TargetedLinkedList{T,R,N}(target::R) where {T,R,N}
-        l = new{T,R,N}(0, target)
-        l.head = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(l)
-        l.tail = TargetedListNode{T,N,TargetedLinkedList{T,R,N}}(l)
+    function TargetedLinkedList{T, R, N}(target::R) where {T, R, N}
+        l = new{T, R, N}(0, target)
+        l.head = TargetedListNode{T, N, TargetedLinkedList{T, R, N}}(l)
+        l.tail = TargetedListNode{T, N, TargetedLinkedList{T, R, N}}(l)
         l.head.next = l.tail
         l.tail.prev = l.head
         return l
     end
 end
 
-TargetedLinkedList(target::R) where {T, R<:AbstractList{T}} = TargetedLinkedList{T,R,nodetype(R)}(target)
-function TargetedLinkedList{T,R,N}(elts...) where {T,R,N}
-    l = TargetedLinkedList{T,R,N}()
+TargetedLinkedList(target::R) where {T, R <: AbstractList{T}} = TargetedLinkedList{T, R, nodetype(R)}(target)
+function TargetedLinkedList{T, R, N}(elts...) where {T, R, N}
+    l = TargetedLinkedList{T, R, N}()
     for elt in elts
         push!(l, elt)
     end
     return l
 end
-TargetedLinkedList{T,R}(args...) where {T,R} = TargetedLinkedList{T,R,nodetype(R)}(args...)
+TargetedLinkedList{T, R}(args...) where {T, R} = TargetedLinkedList{T, R, nodetype(R)}(args...)
 
 
 # for debugging
@@ -320,7 +320,7 @@ struct SkipListCache{T}
     levels::Vector{Int}
 end
 
-SkipListCache{T}() where T = SkipListCache{T}(T[],Int[])
+SkipListCache{T}() where {T} = SkipListCache{T}(T[], Int[])
 
 
 """
@@ -334,23 +334,23 @@ within the skip list data structure.
 
 See also [`SkipList`](@ref), [`PairedSkipNode`](@ref)
 """
-mutable struct SkipNode{T,L<:AbstractSkipList{T}} <: AbstractSkipNode{T,L}
+mutable struct SkipNode{T, L <: AbstractSkipList{T}} <: AbstractSkipNode{T, L}
     list::L
     data::T
-    prev::SkipNode{T,L}
-    next::SkipNode{T,L}
-    up::SkipNode{T,L}
-    down::SkipNode{T,L}
-    function SkipNode{T,L}(list::L) where {T,L<:AbstractSkipList{T}}
-        node = new{T,L}(list)
+    prev::SkipNode{T, L}
+    next::SkipNode{T, L}
+    up::SkipNode{T, L}
+    down::SkipNode{T, L}
+    function SkipNode{T, L}(list::L) where {T, L <: AbstractSkipList{T}}
+        node = new{T, L}(list)
         node.next = node
         node.prev = node
         node.up = node
         node.down = node
         return node
     end
-    function SkipNode{T,L}(list::L, data) where {T,L<:AbstractSkipList{T}}
-        node = new{T,L}(list, data)
+    function SkipNode{T, L}(list::L, data) where {T, L <: AbstractSkipList{T}}
+        node = new{T, L}(list, data)
         node.next = node
         node.prev = node
         node.up = node
@@ -375,16 +375,16 @@ The `target` link is assumed to be reciprocated for a `PairedSkipNode`. For exam
 
 See also [`PairedSkipList`](@ref), [`SkipNode`](@ref)
 """
-mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractPairedSkipNode{T,L}
+mutable struct PairedSkipNode{T, L <: AbstractPairedSkipList{T}} <: AbstractPairedSkipNode{T, L}
     list::L
     data::T
-    prev::PairedSkipNode{T,L}
-    next::PairedSkipNode{T,L}
-    up::PairedSkipNode{T,L}
-    down::PairedSkipNode{T,L}
-    target::PairedSkipNode{T,L}
-    function PairedSkipNode{T,L}(list::L) where {T,L<:AbstractPairedSkipList{T}}
-        node = new{T,L}(list)
+    prev::PairedSkipNode{T, L}
+    next::PairedSkipNode{T, L}
+    up::PairedSkipNode{T, L}
+    down::PairedSkipNode{T, L}
+    target::PairedSkipNode{T, L}
+    function PairedSkipNode{T, L}(list::L) where {T, L <: AbstractPairedSkipList{T}}
+        node = new{T, L}(list)
         node.next = node
         node.prev = node
         node.target = node
@@ -392,8 +392,8 @@ mutable struct PairedSkipNode{T,L<:AbstractPairedSkipList{T}} <: AbstractPairedS
         node.down = node
         return node
     end
-    function PairedSkipNode{T,L}(list::L, data) where {T,L<:AbstractPairedSkipList{T}}
-        node = new{T,L}(list, data)
+    function PairedSkipNode{T, L}(list::L, data) where {T, L <: AbstractPairedSkipList{T}}
+        node = new{T, L}(list, data)
         node.next = node
         node.prev = node
         node.up = node
@@ -435,20 +435,20 @@ julia> collect(l)
  9
 ```
 """
-mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
+mutable struct SkipList{T, F} <: AbstractSkipList{T, F}
     len::Int
     nlevels::Int
     const skipfactor::Int
     const sortedby::F
-    head::SkipNode{T,SkipList{T,F}}
-    tail::SkipNode{T,SkipList{T,F}}
-    top::SkipNode{T,SkipList{T,F}}
-    toptail::SkipNode{T,SkipList{T,F}}
-    cache::Union{Nothing,SkipListCache{T}}
-    function SkipList{T,F}(skipfactor::Int=2, sortedby::F=identity) where {T,F}
-        l = new{T,F}(0,1,skipfactor,sortedby)
-        l.head = SkipNode{T,SkipList{T,F}}(l)
-        l.tail = SkipNode{T,SkipList{T,F}}(l)
+    head::SkipNode{T, SkipList{T, F}}
+    tail::SkipNode{T, SkipList{T, F}}
+    top::SkipNode{T, SkipList{T, F}}
+    toptail::SkipNode{T, SkipList{T, F}}
+    cache::Union{Nothing, SkipListCache{T}}
+    function SkipList{T, F}(skipfactor::Int = 2, sortedby::F = identity) where {T, F}
+        l = new{T, F}(0, 1, skipfactor, sortedby)
+        l.head = SkipNode{T, SkipList{T, F}}(l)
+        l.tail = SkipNode{T, SkipList{T, F}}(l)
         l.top = l.head
         l.toptail = l.tail
         l.head.next = l.tail
@@ -460,8 +460,8 @@ mutable struct SkipList{T,F} <: AbstractSkipList{T,F}
     end
 end
 
-function SkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,F}
-    l = SkipList{T,F}(skipfactor, sortedby)
+function SkipList{T}(elts...; sortedby::F = identity, skipfactor::Int = 2) where {T, F}
+    l = SkipList{T, F}(skipfactor, sortedby)
     for elt in elts
         push!(l, elt)
     end
@@ -487,22 +487,22 @@ The `sortedby` function determines the sort key applied to each element (default
 
 See also [`SkipList`](@ref), [`PairedSkipNode`](@ref)
 """
-mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
+mutable struct PairedSkipList{T, F} <: AbstractPairedSkipList{T, F}
     len::Int
     nlevels::Int
     const skipfactor::Int
     const sortedby::F
-    target::PairedSkipList{T,F}
-    head::PairedSkipNode{T,PairedSkipList{T,F}}
-    tail::PairedSkipNode{T,PairedSkipList{T,F}}
-    top::PairedSkipNode{T,PairedSkipList{T,F}}
-    toptail::PairedSkipNode{T,PairedSkipList{T,F}}
-    cache::Union{Nothing,SkipListCache{T}}
-    function PairedSkipList{T,F}(skipfactor::Int=2, sortedby::F=identity) where {T,F}
-        l = new{T,F}(0,1,skipfactor,sortedby)
+    target::PairedSkipList{T, F}
+    head::PairedSkipNode{T, PairedSkipList{T, F}}
+    tail::PairedSkipNode{T, PairedSkipList{T, F}}
+    top::PairedSkipNode{T, PairedSkipList{T, F}}
+    toptail::PairedSkipNode{T, PairedSkipList{T, F}}
+    cache::Union{Nothing, SkipListCache{T}}
+    function PairedSkipList{T, F}(skipfactor::Int = 2, sortedby::F = identity) where {T, F}
+        l = new{T, F}(0, 1, skipfactor, sortedby)
         l.target = l
-        l.head = PairedSkipNode{T,PairedSkipList{T,F}}(l)
-        l.tail = PairedSkipNode{T,PairedSkipList{T,F}}(l)
+        l.head = PairedSkipNode{T, PairedSkipList{T, F}}(l)
+        l.tail = PairedSkipNode{T, PairedSkipList{T, F}}(l)
         l.top = l.head
         l.toptail = l.tail
         l.head.next = l.tail
@@ -512,10 +512,10 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
         l.cache = nothing
         return l
     end
-    function PairedSkipList{T,F}(target::PairedSkipList{T}, skipfactor::Int=2, sortedby::F=identity) where {T,F}
-        l = new{T,F}(0,1,skipfactor,sortedby,target)
-        l.head = PairedSkipNode{T,PairedSkipList{T,F}}(l)
-        l.tail = PairedSkipNode{T,PairedSkipList{T,F}}(l)
+    function PairedSkipList{T, F}(target::PairedSkipList{T}, skipfactor::Int = 2, sortedby::F = identity) where {T, F}
+        l = new{T, F}(0, 1, skipfactor, sortedby, target)
+        l.head = PairedSkipNode{T, PairedSkipList{T, F}}(l)
+        l.tail = PairedSkipNode{T, PairedSkipList{T, F}}(l)
         l.top = l.head
         l.toptail = l.tail
         l.head.next = l.tail
@@ -527,8 +527,8 @@ mutable struct PairedSkipList{T,F} <: AbstractPairedSkipList{T,F}
     end
 end
 
-function PairedSkipList{T}(elts...; sortedby::F=identity, skipfactor::Int=2) where {T,F}
-    l = PairedSkipList{T,F}(skipfactor, sortedby)
+function PairedSkipList{T}(elts...; sortedby::F = identity, skipfactor::Int = 2) where {T, F}
+    l = PairedSkipList{T, F}(skipfactor, sortedby)
     for elt in elts
         push!(l, elt)
     end
@@ -538,11 +538,11 @@ PairedSkipList(elts...; kw...) = PairedSkipList{mapreduce(typeof, promote_type, 
 
 function Base.show(io::IO, node::AbstractNode)
     x = node.data
-    print(io, "$(typeof(node))($x)")
+    return print(io, "$(typeof(node))($x)")
 end
 
 function Base.show(io::IO, l::AbstractList)
     print(io, typeof(l), '(')
     join(io, l, ", ")
-    print(io, ')')
+    return print(io, ')')
 end

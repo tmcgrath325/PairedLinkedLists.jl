@@ -23,9 +23,9 @@ using PairedLinkedLists: listtype, isdisconnected
         l = DoublyLinkedList{Int}()
         # The ListNode{T} outer constructor fills in the list parameter and must
         # build a ListNode, not some other node type.
-        @test ListNode{Int}(l) isa ListNode{Int,DoublyLinkedList{Int}}
+        @test ListNode{Int}(l) isa ListNode{Int, DoublyLinkedList{Int}}
         node = ListNode{Int}(l, 5)
-        @test node isa ListNode{Int,DoublyLinkedList{Int}}
+        @test node isa ListNode{Int, DoublyLinkedList{Int}}
         @test node.data == 5
         @test node.list === l
     end
@@ -37,40 +37,40 @@ using PairedLinkedLists: listtype, isdisconnected
             l = DoublyLinkedList{Int}(1:n...)
 
             @testset "data" begin
-                for (i,data) in enumerate(l)
+                for (i, data) in enumerate(l)
                     @test data == i
                 end
-                for (i,data) in enumerate(ListDataIterator(l))
+                for (i, data) in enumerate(ListDataIterator(l))
                     @test data == i
                 end
-                for (i,data) in enumerate(ListDataIterator(l; rev=true))
-                    @test data == n-i+1
+                for (i, data) in enumerate(ListDataIterator(l; rev = true))
+                    @test data == n - i + 1
                 end
-                for (i,data) in enumerate(ListDataIterator(l.head.next.next))
-                    @test data == i+1
+                for (i, data) in enumerate(ListDataIterator(l.head.next.next))
+                    @test data == i + 1
                 end
-                for (i,data) in enumerate(ListDataIterator(l.tail.prev.prev; rev=true))
-                    @test data == n-i
+                for (i, data) in enumerate(ListDataIterator(l.tail.prev.prev; rev = true))
+                    @test data == n - i
                 end
                 @test eltype(ListDataIterator(l)) == eltype(l)
                 @test eltype(collect(ListDataIterator(l))) == eltype(l)
             end
 
             @testset "nodes" begin
-                for (i,node) in enumerate(l.head.next)
-                    @test node == newnode(l,i)
+                for (i, node) in enumerate(l.head.next)
+                    @test node == newnode(l, i)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l))
-                    @test node == newnode(l,i)
+                for (i, node) in enumerate(ListNodeIterator(l))
+                    @test node == newnode(l, i)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l; rev=true))
-                    @test node == newnode(l,n-i+1)
+                for (i, node) in enumerate(ListNodeIterator(l; rev = true))
+                    @test node == newnode(l, n - i + 1)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l.head.next.next))
-                    @test node == newnode(l,i+1)
+                for (i, node) in enumerate(ListNodeIterator(l.head.next.next))
+                    @test node == newnode(l, i + 1)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev=true))
-                    @test node == newnode(l,n-i)
+                for (i, node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev = true))
+                    @test node == newnode(l, n - i)
                 end
                 @test eltype(ListNodeIterator(l)) == typeof(l.head.next)
                 @test eltype(collect(ListNodeIterator(l))) == typeof(l.head.next)
@@ -83,15 +83,15 @@ using PairedLinkedLists: listtype, isdisconnected
             @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
-                for i = 1:n
+                for i in 1:n
                     push!(l, i)
                     @test last(l) == i
                     if i > 4
                         @test getindex(l, i) == i
-                        @test getindex(l, 1:floor(Int, i/2)) == DoublyLinkedList{Int}(1:floor(Int, i/2)...)
-                        @test l[1:floor(Int, i/2)] == DoublyLinkedList{Int}(1:floor(Int, i/2)...)
+                        @test getindex(l, 1:floor(Int, i / 2)) == DoublyLinkedList{Int}(1:floor(Int, i / 2)...)
+                        @test l[1:floor(Int, i / 2)] == DoublyLinkedList{Int}(1:floor(Int, i / 2)...)
                         setindex!(l, 0, i - 2)
-                        @test l == DoublyLinkedList{Int}(1:i-3..., 0, i-1:i...)
+                        @test l == DoublyLinkedList{Int}(1:(i - 3)..., 0, (i - 1):i...)
                         setindex!(l, i - 2, i - 2)
                     end
                     @test lastindex(l) == i
@@ -117,13 +117,13 @@ using PairedLinkedLists: listtype, isdisconnected
             end
 
             @testset "pop back" begin
-                for i = 1:n
+                for i in 1:n
                     x = pop!(l)
                     @test length(l) == n - i
                     @test isempty(l) == (i == n)
                     @test x == n - i + 1
                     cl = collect(l)
-                    @test cl == collect(1:n-i)
+                    @test cl == collect(1:(n - i))
                 end
             end
         end
@@ -132,7 +132,7 @@ using PairedLinkedLists: listtype, isdisconnected
             l = DoublyLinkedList{Int}()
 
             @testset "push front" begin
-                for i = 1:n
+                for i in 1:n
                     pushfirst!(l, i)
                     @test first(l) == i
                     @test length(l) == i
@@ -144,49 +144,49 @@ using PairedLinkedLists: listtype, isdisconnected
             end
 
             @testset "pop front" begin
-                for i = 1:n
+                for i in 1:n
                     x = popfirst!(l)
                     @test length(l) == n - i
                     @test isempty(l) == (i == n)
                     @test x == n - i + 1
                     cl = collect(l)
-                    @test cl == collect(n-i:-1:1)
+                    @test cl == collect((n - i):-1:1)
                 end
             end
 
         end
 
         @testset "append / delete / copy / reverse" begin
-            for i = 1:n
+            for i in 1:n
                 l = DoublyLinkedList{Int}(1:n...)
 
                 @testset "append" begin
-                    l2 = DoublyLinkedList{Int}(n+1:2n...)
+                    l2 = DoublyLinkedList{Int}((n + 1):2n...)
                     append!(l, l2)
                     @test l == DoublyLinkedList{Int}(1:2n...)
                     @test collect(l) == collect(DoublyLinkedList{Int}(1:2n...))
                     # backward links must be spliced too, not just forward `.next`
-                    @test [node.data for node in ListNodeIterator(l; rev=true)] == collect(2n:-1:1)
+                    @test [node.data for node in ListNodeIterator(l; rev = true)] == collect(2n:-1:1)
                     @test last(l) == 2n
                     l3 = DoublyLinkedList{Int}(1:n...)
-                    append!(l3, n+1:2n...)
+                    append!(l3, (n + 1):2n...)
                     @test l3 == DoublyLinkedList{Int}(1:2n...)
                     @test collect(l3) == collect(DoublyLinkedList{Int}(1:2n...))
 
                     # backward consistency exercised through pop! and reverse (mutating, so use fresh lists)
                     lp = DoublyLinkedList{Int}(1:n...)
-                    append!(lp, DoublyLinkedList{Int}(n+1:2n...))
+                    append!(lp, DoublyLinkedList{Int}((n + 1):2n...))
                     @test pop!(lp) == 2n
-                    @test lp == DoublyLinkedList{Int}(1:2n-1...)
+                    @test lp == DoublyLinkedList{Int}(1:(2n - 1)...)
                     lr = DoublyLinkedList{Int}(1:n...)
-                    append!(lr, DoublyLinkedList{Int}(n+1:2n...))
+                    append!(lr, DoublyLinkedList{Int}((n + 1):2n...))
                     @test collect(reverse(lr)) == collect(2n:-1:1)
 
                     # empty operands behave like Base: no-op / prepend, never throw
                     le1 = DoublyLinkedList{Int}()
                     append!(le1, DoublyLinkedList{Int}(1:n...))
                     @test le1 == DoublyLinkedList{Int}(1:n...)
-                    @test [node.data for node in ListNodeIterator(le1; rev=true)] == collect(n:-1:1)
+                    @test [node.data for node in ListNodeIterator(le1; rev = true)] == collect(n:-1:1)
                     le2 = DoublyLinkedList{Int}(1:n...)
                     append!(le2, DoublyLinkedList{Int}())
                     @test le2 == DoublyLinkedList{Int}(1:n...)
@@ -196,14 +196,14 @@ using PairedLinkedLists: listtype, isdisconnected
                 end
 
                 @testset "delete" begin
-                    delete!(l, n+1:2n)
+                    delete!(l, (n + 1):2n)
                     @test l == DoublyLinkedList{Int}(1:n...)
-                    for i = n:-1:1
+                    for i in n:-1:1
                         delete!(l, i)
                     end
                     @test l == DoublyLinkedList{Int}()
                     l = DoublyLinkedList{Int}(1:n...)
-                    @test_throws BoundsError delete!(l, n-1:2n)
+                    @test_throws BoundsError delete!(l, (n - 1):2n)
                     @test_throws BoundsError delete!(l, 2n)
                 end
 
@@ -215,7 +215,7 @@ using PairedLinkedLists: listtype, isdisconnected
                     copy!(l3, l)
                     @test l3 == l
 
-                    l4 = DoublyLinkedList{Int}(1:2*i...)
+                    l4 = DoublyLinkedList{Int}(1:(2 * i)...)
                     copy!(l4, l)
                     @test l4 == l
                 end
@@ -228,12 +228,12 @@ using PairedLinkedLists: listtype, isdisconnected
         end
 
         @testset "map / filter / show" begin
-            for i = 1:n
+            for i in 1:n
                 @testset "map" begin
                     l = DoublyLinkedList{Int}(1:n...)
                     @test map(x -> 2x, l) == DoublyLinkedList{Int}(2:2:2n...)
                     l2 = DoublyLinkedList{Float64}()
-                    @test map(x -> x*im, l2) == DoublyLinkedList{Complex{Float64}}()
+                    @test map(x -> x * im, l2) == DoublyLinkedList{Complex{Float64}}()
                     @test map(Int32, l2) == DoublyLinkedList{Int32}()
                     f(x) = x % 2 == 0 ? convert(Int8, x) : convert(Float16, x)
                     @test typeof(map(f, l)) == DoublyLinkedList{Real}
@@ -249,8 +249,8 @@ using PairedLinkedLists: listtype, isdisconnected
                     io = IOBuffer()
                     @test sprint(io -> show(io, l.head.next)) == "$(typeof(l.head.next))($(l.head.next.data))"
                     io1 = IOBuffer()
-                    write(io1, "DoublyLinkedList{Int32}(");
-                    write(io1, join(l, ", "));
+                    write(io1, "DoublyLinkedList{Int32}(")
+                    write(io1, join(l, ", "))
                     write(io1, ")")
                     seekstart(io1)
                     @test sprint(io -> show(io, l)) == read(io1, String)
@@ -262,34 +262,34 @@ using PairedLinkedLists: listtype, isdisconnected
             @testset "insert" begin
                 l = DoublyLinkedList{Int}(1:n...)
                 @test_throws BoundsError insert!(l, 0, 0)
-                @test_throws BoundsError insert!(l, n+2, 0)
-                @test insert!(l, n+1, n+1) == DoublyLinkedList{Int}(1:n+1...)
-                @test insert!(l, 1, 0) == DoublyLinkedList{Int}(0:n+1...)
-                @test insert!(l, n+2, -1) == DoublyLinkedList{Int}(0:n..., -1, n+1)
-                for i=n:-1:1
-                    insert!(l, n+2, i)
+                @test_throws BoundsError insert!(l, n + 2, 0)
+                @test insert!(l, n + 1, n + 1) == DoublyLinkedList{Int}(1:(n + 1)...)
+                @test insert!(l, 1, 0) == DoublyLinkedList{Int}(0:(n + 1)...)
+                @test insert!(l, n + 2, -1) == DoublyLinkedList{Int}(0:n..., -1, n + 1)
+                for i in n:-1:1
+                    insert!(l, n + 2, i)
                 end
-                @test l == DoublyLinkedList{Int}(0:n..., 1:n..., -1, n+1)
+                @test l == DoublyLinkedList{Int}(0:n..., 1:n..., -1, n + 1)
                 @test l.len == 2n + 3
             end
 
             @testset "popat" begin
                 l = DoublyLinkedList{Int}(1:n...)
                 @test_throws BoundsError popat!(l, 0)
-                @test_throws BoundsError popat!(l, n+1)
+                @test_throws BoundsError popat!(l, n + 1)
                 @test popat!(l, 0, missing) === missing
-                @test popat!(l, n+1, Inf) === Inf
-                for i=2:n-1
+                @test popat!(l, n + 1, Inf) === Inf
+                for i in 2:(n - 1)
                     @test popat!(l, 2) == i
                 end
-                @test l == DoublyLinkedList{Int}(1,n)
+                @test l == DoublyLinkedList{Int}(1, n)
                 @test l.len == 2
 
                 l2 = DoublyLinkedList{Int}(1:n...)
-                for i=n-1:-1:2
-                    @test popat!(l2, l2.len-1, 0) == i
+                for i in (n - 1):-1:2
+                    @test popat!(l2, l2.len - 1, 0) == i
                 end
-                @test l2 == DoublyLinkedList{Int}(1,n)
+                @test l2 == DoublyLinkedList{Int}(1, n)
                 @test l2.len == 2
                 @test popat!(l2, 1) == 1
                 @test popat!(l2, 1) == n
@@ -304,24 +304,24 @@ using PairedLinkedLists: listtype, isdisconnected
                 l = DoublyLinkedList{Int}(1:2n...)
                 @test splice!(l, n:1) == Int[]
                 @test l == DoublyLinkedList{Int}(1:2n...)
-                @test collect(n+1:2n) == splice!(l, n+1:2n)
+                @test collect((n + 1):2n) == splice!(l, (n + 1):2n)
                 @test l == DoublyLinkedList{Int}(1:n...)
-                for i = n:-1:1
+                for i in n:-1:1
                     @test i == splice!(l, i)
                 end
                 @test l == DoublyLinkedList{Int}()
                 @test_throws BoundsError splice!(l, 1)
-                
+
             end
             @testset "with replacement" begin
-                l = DoublyLinkedList{Int}(1)  
-                for i = 2:n
-                    @test splice!(l, i-1:i-2, i) == Int[]
+                l = DoublyLinkedList{Int}(1)
+                for i in 2:n
+                    @test splice!(l, (i - 1):(i - 2), i) == Int[]
                     @test last(l) == i
                     @test l.len == i
                 end
-                @test l == DoublyLinkedList{Int}(1:n...,)
-                for i = 1:n
+                @test l == DoublyLinkedList{Int}(1:n...)
+                for i in 1:n
                     @test splice!(l, 1:0, i) == Int[]
                     @test first(l) == 1
                     @test l[2] == i
@@ -329,20 +329,20 @@ using PairedLinkedLists: listtype, isdisconnected
                 end
                 @test l == DoublyLinkedList{Int}(1, n:-1:1..., 2:n...)
                 previousdata = l[1:l.len]
-                for i = 1:2n
-                    @test splice!(l, i, i+2n) == previousdata[i]
-                    @test l[i] == i+2n
+                for i in 1:2n
+                    @test splice!(l, i, i + 2n) == previousdata[i]
+                    @test l[i] == i + 2n
                 end
-                @test l == DoublyLinkedList{Int}(2n+1:4n...)
-                @test splice!(l, n+1:2n, [3n+1, 3n+2]) == [3n+1:4n...,]
-                @test l == DoublyLinkedList{Int}(2n+1:3n+2...)
-                @test l.len == n+2
-                for i=1:n+2
-                    @test splice!(l, i, -i) == i+2n
+                @test l == DoublyLinkedList{Int}((2n + 1):4n...)
+                @test splice!(l, (n + 1):2n, [3n + 1, 3n + 2]) == [(3n + 1):4n...]
+                @test l == DoublyLinkedList{Int}((2n + 1):(3n + 2)...)
+                @test l.len == n + 2
+                for i in 1:(n + 2)
+                    @test splice!(l, i, -i) == i + 2n
                 end
-                @test l == DoublyLinkedList{Int}(-1:-1:-n-2...)
-                @test l.len == n+2
-                @test splice!(l, 1:n+2, 0) == collect(-1:-1:-n-2)
+                @test l == DoublyLinkedList{Int}(-1:-1:(-n - 2)...)
+                @test l.len == n + 2
+                @test splice!(l, 1:(n + 2), 0) == collect(-1:-1:(-n - 2))
                 @test l == DoublyLinkedList{Int}(0)
                 @test l.len == 1
             end
@@ -365,19 +365,19 @@ using PairedLinkedLists: listtype, isdisconnected
         r = Int[]
         m = 100
 
-        for k = 1 : m
+        for k in 1:m
             la = rand(2:20)
             x = rand(1:1000, la)
 
-            for i = 1 : la
-                if 3*rand() < 1
+            for i in 1:la
+                if 3 * rand() < 1
                     push!(r, x[i])
                     push!(l, x[i])
                 elseif rand(Bool)
                     pushfirst!(r, x[i])
                     pushfirst!(l, x[i])
                 else
-                    idx = idx = rand(1:length(r)+1)
+                    idx = idx = rand(1:(length(r) + 1))
                     insert!(r, idx, x[i])
                     insert!(l, idx, x[i])
                 end
@@ -386,9 +386,9 @@ using PairedLinkedLists: listtype, isdisconnected
             @test length(l) == length(r)
             @test collect(l) == r
 
-            lr = rand(0:length(r)-1)
-            for i = 1 : lr
-                if 3*rand() < 1
+            lr = rand(0:(length(r) - 1))
+            for i in 1:lr
+                if 3 * rand() < 1
                     pop!(r)
                     pop!(l)
                 elseif rand(Bool)
@@ -405,8 +405,8 @@ using PairedLinkedLists: listtype, isdisconnected
             @test collect(l) == r
 
             ls = rand(0:length(r))
-            x = rand(1:1000, 2*ls)
-            for i = 1 : ls
+            x = rand(1:1000, 2 * ls)
+            for i in 1:ls
                 idx = rand(1:length(r))
                 if rand(Bool)
                     splice!(r, idx)

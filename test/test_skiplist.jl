@@ -5,7 +5,7 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
     @testset "concrete pointer field types" begin
         # The prev/next/up/down links must carry the full SkipNode{T,L} type so
         # the compiler can infer concrete types across pointer chains.
-        N = SkipNode{Int,SkipList{Int,typeof(identity)}}
+        N = SkipNode{Int, SkipList{Int, typeof(identity)}}
         for f in (:prev, :next, :up, :down)
             @test isconcretetype(fieldtype(N, f))
         end
@@ -34,38 +34,38 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
             l = SkipList{Int}(1:n...)
 
             @testset "data" begin
-                for (i,data) in enumerate(l)
+                for (i, data) in enumerate(l)
                     @test data == i
                 end
-                for (i,data) in enumerate(ListDataIterator(l))
+                for (i, data) in enumerate(ListDataIterator(l))
                     @test data == i
                 end
-                for (i,data) in enumerate(ListDataIterator(l; rev=true))
-                    @test data == n-i+1
+                for (i, data) in enumerate(ListDataIterator(l; rev = true))
+                    @test data == n - i + 1
                 end
-                for (i,data) in enumerate(ListDataIterator(l.head.next.next))
-                    @test data == i+1
+                for (i, data) in enumerate(ListDataIterator(l.head.next.next))
+                    @test data == i + 1
                 end
-                for (i,data) in enumerate(ListDataIterator(l.tail.prev.prev; rev=true))
-                    @test data == n-i
+                for (i, data) in enumerate(ListDataIterator(l.tail.prev.prev; rev = true))
+                    @test data == n - i
                 end
             end
 
             @testset "nodes" begin
-                for (i,node) in enumerate(l.head.next)
-                    @test node == newnode(l,i)
+                for (i, node) in enumerate(l.head.next)
+                    @test node == newnode(l, i)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l))
-                    @test node == newnode(l,i)
+                for (i, node) in enumerate(ListNodeIterator(l))
+                    @test node == newnode(l, i)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l; rev=true))
-                    @test node == newnode(l,n-i+1)
+                for (i, node) in enumerate(ListNodeIterator(l; rev = true))
+                    @test node == newnode(l, n - i + 1)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l.head.next.next))
-                    @test node == newnode(l,i+1)
+                for (i, node) in enumerate(ListNodeIterator(l.head.next.next))
+                    @test node == newnode(l, i + 1)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev=true))
-                    @test node == newnode(l,n-i)
+                for (i, node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev = true))
+                    @test node == newnode(l, n - i)
                 end
             end
         end
@@ -76,7 +76,7 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
             @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
-                for i = 1:n
+                for i in 1:n
                     push!(l, i)
                     @test last(l) == i
                     @test getindex(l, i) == i
@@ -104,10 +104,10 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
             l = SkipList{Int}()
 
             @testset "push front" begin
-                for i = n:-1:1
+                for i in n:-1:1
                     push!(l, i)
                     @test first(l) == i
-                    @test length(l) == n-i+1
+                    @test length(l) == n - i + 1
                     @test isempty(l) == false
                     cl = collect(l)
                     @test isa(cl, Vector{Int})
@@ -116,31 +116,31 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
             end
 
             @testset "pop front" begin
-                for i = 1:n
+                for i in 1:n
                     x = popfirst!(l)
                     @test length(l) == n - i
                     @test isempty(l) == (i == n)
                     @test x == i
                     cl = collect(l)
-                    @test cl == collect(i+1:n)
+                    @test cl == collect((i + 1):n)
                 end
             end
 
         end
 
         @testset "delete / copy" begin
-            for i = 1:n
+            for i in 1:n
                 l = SkipList{Int}(1:2n...)
 
                 @testset "delete" begin
-                    delete!(l, n+1:2n)
+                    delete!(l, (n + 1):2n)
                     @test l == SkipList{Int}(1:n...)
-                    for i = n:-1:1
+                    for i in n:-1:1
                         delete!(l, i)
                     end
                     @test l == SkipList{Int}()
                     l = SkipList{Int}(1:n...)
-                    @test_throws BoundsError delete!(l, n-1:2n)
+                    @test_throws BoundsError delete!(l, (n - 1):2n)
                     @test_throws BoundsError delete!(l, 2n)
                 end
 
@@ -152,13 +152,13 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
         end
 
         @testset "show" begin
-            for i = 1:n
+            for i in 1:n
                 l = SkipList{Int32}(1:n...)
                 io = IOBuffer()
                 @test sprint(io -> show(io, l.head.next)) == "$(typeof(l.head.next))($(l.head.next.data))"
                 io1 = IOBuffer()
-                write(io1, "SkipList{Int32, typeof(identity)}(");
-                write(io1, join(l, ", "));
+                write(io1, "SkipList{Int32, typeof(identity)}(")
+                write(io1, join(l, ", "))
                 write(io1, ")")
                 seekstart(io1)
                 @test sprint(io -> show(io, l)) == read(io1, String)
@@ -166,23 +166,23 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
         end
 
         @testset "popat" begin
-            for i=1:n
+            for i in 1:n
                 l = SkipList{Int}(1:n...)
                 @test_throws BoundsError popat!(l, 0)
-                @test_throws BoundsError popat!(l, n+1)
+                @test_throws BoundsError popat!(l, n + 1)
                 @test popat!(l, 0, missing) === missing
-                @test popat!(l, n+1, Inf) === Inf
-                for i=2:n-1
+                @test popat!(l, n + 1, Inf) === Inf
+                for i in 2:(n - 1)
                     @test popat!(l, 2) == i
                 end
-                @test l == SkipList{Int}(1,n)
+                @test l == SkipList{Int}(1, n)
                 @test l.len == 2
 
                 l2 = SkipList{Int}(1:n...)
-                for i=n-1:-1:2
-                    @test popat!(l2, l2.len-1, 0) == i
+                for i in (n - 1):-1:2
+                    @test popat!(l2, l2.len - 1, 0) == i
                 end
-                @test l2 == SkipList{Int}(1,n)
+                @test l2 == SkipList{Int}(1, n)
                 @test l2.len == 2
                 @test popat!(l2, 1) == 1
                 @test popat!(l2, 1) == n
@@ -209,60 +209,60 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
         l2 = SkipList{Int}() # for testing the cache
         l2.cache = SkipListCache{Int}()
         for l in (l1, l2)
-        r = Int[]
-        m = 100
+            r = Int[]
+            m = 100
 
-        for k = 1 : m
-            la = rand(2:20)
-            x = rand(1:1000, la)
+            for k in 1:m
+                la = rand(2:20)
+                x = rand(1:1000, la)
 
-            for i = 1 : la
-                push!(r, x[i])
-                sort!(r)
-                push!(l, x[i])
-            end
-
-            @test length(l) == length(r)
-            @test collect(l) == r
-
-            if !isnothing(l.cache)
-                @test skiplistsidentical(l, copyfromcache(l))
-            end
-
-            lr = rand(0:length(r)-1)
-            for i = 1 : lr
-                if 3*rand() < 1
-                    pop!(r)
-                    pop!(l)
-                elseif rand(Bool)
-                    popfirst!(r)
-                    popfirst!(l)
-                else
-                    idx = rand(2:length(r))
-                    popat!(r, idx)
-                    popat!(l, idx)
+                for i in 1:la
+                    push!(r, x[i])
+                    sort!(r)
+                    push!(l, x[i])
                 end
+
+                @test length(l) == length(r)
+                @test collect(l) == r
+
+                if !isnothing(l.cache)
+                    @test skiplistsidentical(l, copyfromcache(l))
+                end
+
+                lr = rand(0:(length(r) - 1))
+                for i in 1:lr
+                    if 3 * rand() < 1
+                        pop!(r)
+                        pop!(l)
+                    elseif rand(Bool)
+                        popfirst!(r)
+                        popfirst!(l)
+                    else
+                        idx = rand(2:length(r))
+                        popat!(r, idx)
+                        popat!(l, idx)
+                    end
+                end
+
+                @test length(l) == length(r)
+                @test collect(l) == r
+
+                @test length(l) == length(r)
+                @test collect(l) == r
+
+                if !isnothing(l.cache)
+                    @test skiplistsidentical(l, copyfromcache(l))
+                end
+
+                levelcounter = 1
+                node = head(l)
+                while !attop(node)
+                    levelcounter += 1
+                    node = node.up
+                end
+                @test levelcounter == l.nlevels
             end
-
-            @test length(l) == length(r)
-            @test collect(l) == r
-
-            @test length(l) == length(r)
-            @test collect(l) == r
-
-            if !isnothing(l.cache)
-                @test skiplistsidentical(l, copyfromcache(l))
-            end
-
-            levelcounter = 1
-            node = head(l)
-            while !attop(node)
-                levelcounter += 1
-                node = node.up
-            end
-            @test levelcounter == l.nlevels
         end
-    end
     end
 
     @testset "specific cases" begin
@@ -339,7 +339,7 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
             ]
 
             l = SkipList{Tuple{Float64, Float64}}(; sortedby = x -> (x[1], -x[2]))
-            l = copyfromcache(typeof(l), SkipListCache{Tuple{Float64,Float64}}(dataqueue, levelqueue); sortedby = l.sortedby)
+            l = copyfromcache(typeof(l), SkipListCache{Tuple{Float64, Float64}}(dataqueue, levelqueue); sortedby = l.sortedby)
 
             @test l.cache.data == dataqueue
             @test l.cache.levels == levelqueue
@@ -354,7 +354,7 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
         (::NegKey)(x) = -x
         key = NegKey()
         @test !(key isa Function)
-        l = SkipList{Int,NegKey}(2, key)
+        l = SkipList{Int, NegKey}(2, key)
         push!(l, 3); push!(l, 1); push!(l, 2)
         @test collect(l) == [3, 2, 1]
     end
@@ -367,7 +367,7 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, h
         @test eltype(l2) == Float64
         @test collect(l2) == [1.0, 2.0, 3.0]
         # keyword args are forwarded
-        l3 = SkipList(3, 1, 2; sortedby=-)
+        l3 = SkipList(3, 1, 2; sortedby = -)
         @test collect(l3) == [3, 2, 1]
     end
 

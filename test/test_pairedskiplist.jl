@@ -23,38 +23,38 @@
             l = PairedSkipList{Int}(1:n...)
 
             @testset "data" begin
-                for (i,data) in enumerate(l)
+                for (i, data) in enumerate(l)
                     @test data == i
                 end
-                for (i,data) in enumerate(ListDataIterator(l))
+                for (i, data) in enumerate(ListDataIterator(l))
                     @test data == i
                 end
-                for (i,data) in enumerate(ListDataIterator(l; rev=true))
-                    @test data == n-i+1
+                for (i, data) in enumerate(ListDataIterator(l; rev = true))
+                    @test data == n - i + 1
                 end
-                for (i,data) in enumerate(ListDataIterator(l.head.next.next))
-                    @test data == i+1
+                for (i, data) in enumerate(ListDataIterator(l.head.next.next))
+                    @test data == i + 1
                 end
-                for (i,data) in enumerate(ListDataIterator(l.tail.prev.prev; rev=true))
-                    @test data == n-i
+                for (i, data) in enumerate(ListDataIterator(l.tail.prev.prev; rev = true))
+                    @test data == n - i
                 end
             end
 
             @testset "nodes" begin
-                for (i,node) in enumerate(l.head.next)
-                    @test node == newnode(l,i)
+                for (i, node) in enumerate(l.head.next)
+                    @test node == newnode(l, i)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l))
-                    @test node == newnode(l,i)
+                for (i, node) in enumerate(ListNodeIterator(l))
+                    @test node == newnode(l, i)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l; rev=true))
-                    @test node == newnode(l,n-i+1)
+                for (i, node) in enumerate(ListNodeIterator(l; rev = true))
+                    @test node == newnode(l, n - i + 1)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l.head.next.next))
-                    @test node == newnode(l,i+1)
+                for (i, node) in enumerate(ListNodeIterator(l.head.next.next))
+                    @test node == newnode(l, i + 1)
                 end
-                for (i,node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev=true))
-                    @test node == newnode(l,n-i)
+                for (i, node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev = true))
+                    @test node == newnode(l, n - i)
                 end
             end
         end
@@ -65,7 +65,7 @@
             @test_throws ArgumentError insertafter!(newnode(dummy_list, 0), l.head)
 
             @testset "push back" begin
-                for i = 1:n
+                for i in 1:n
                     push!(l, i)
                     @test last(l) == i
                     @test getindex(l, i) == i
@@ -93,10 +93,10 @@
             l = PairedSkipList{Int}()
 
             @testset "push front" begin
-                for i = n:-1:1
+                for i in n:-1:1
                     push!(l, i)
                     @test first(l) == i
-                    @test length(l) == n-i+1
+                    @test length(l) == n - i + 1
                     @test isempty(l) == false
                     cl = collect(l)
                     @test isa(cl, Vector{Int})
@@ -105,31 +105,31 @@
             end
 
             @testset "pop front" begin
-                for i = 1:n
+                for i in 1:n
                     x = popfirst!(l)
                     @test length(l) == n - i
                     @test isempty(l) == (i == n)
                     @test x == i
                     cl = collect(l)
-                    @test cl == collect(i+1:n)
+                    @test cl == collect((i + 1):n)
                 end
             end
 
         end
 
         @testset "delete / copy" begin
-            for i = 1:n
+            for i in 1:n
                 l = PairedSkipList{Int}(1:2n...)
 
                 @testset "delete" begin
-                    delete!(l, n+1:2n)
+                    delete!(l, (n + 1):2n)
                     @test l == PairedSkipList{Int}(1:n...)
-                    for i = n:-1:1
+                    for i in n:-1:1
                         delete!(l, i)
                     end
                     @test l == PairedSkipList{Int}()
                     l = PairedSkipList{Int}(1:n...)
-                    @test_throws BoundsError delete!(l, n-1:2n)
+                    @test_throws BoundsError delete!(l, (n - 1):2n)
                     @test_throws BoundsError delete!(l, 2n)
                 end
 
@@ -141,13 +141,13 @@
         end
 
         @testset "show" begin
-            for i = 1:n
+            for i in 1:n
                 l = PairedSkipList{Int32}(1:n...)
                 io = IOBuffer()
                 @test sprint(io -> show(io, l.head.next)) == "$(typeof(l.head.next))($(l.head.next.data))"
                 io1 = IOBuffer()
-                write(io1, "PairedSkipList{Int32, typeof(identity)}(");
-                write(io1, join(l, ", "));
+                write(io1, "PairedSkipList{Int32, typeof(identity)}(")
+                write(io1, join(l, ", "))
                 write(io1, ")")
                 seekstart(io1)
                 @test sprint(io -> show(io, l)) == read(io1, String)
@@ -155,23 +155,23 @@
         end
 
         @testset "popat" begin
-            for i=1:n
+            for i in 1:n
                 l = PairedSkipList{Int}(1:n...)
                 @test_throws BoundsError popat!(l, 0)
-                @test_throws BoundsError popat!(l, n+1)
+                @test_throws BoundsError popat!(l, n + 1)
                 @test popat!(l, 0, missing) === missing
-                @test popat!(l, n+1, Inf) === Inf
-                for i=2:n-1
+                @test popat!(l, n + 1, Inf) === Inf
+                for i in 2:(n - 1)
                     @test popat!(l, 2) == i
                 end
-                @test l == PairedSkipList{Int}(1,n)
+                @test l == PairedSkipList{Int}(1, n)
                 @test l.len == 2
 
                 l2 = PairedSkipList{Int}(1:n...)
-                for i=n-1:-1:2
-                    @test popat!(l2, l2.len-1, 0) == i
+                for i in (n - 1):-1:2
+                    @test popat!(l2, l2.len - 1, 0) == i
                 end
-                @test l2 == PairedSkipList{Int}(1,n)
+                @test l2 == PairedSkipList{Int}(1, n)
                 @test l2.len == 2
                 @test popat!(l2, 1) == 1
                 @test popat!(l2, 1) == n
@@ -202,7 +202,7 @@
         end
 
         @testset "targets" begin
-            l1 = PairedSkipList{Int}(1:n...)  
+            l1 = PairedSkipList{Int}(1:n...)
             l2 = PairedSkipList{Int}(1:n...)
             l3 = PairedSkipList{Int}(1:n...)
             l4 = PairedSkipList{Int, typeof(identity)}(l3)
@@ -215,7 +215,7 @@
             addtarget!(l3, l4)
 
             @testset "add node targets" begin
-                for i=1:n
+                for i in 1:n
                     node1 = getnode(l1, 1)
                     node2 = getnode(l2, i)
                     prevtarget = node1.target
@@ -228,9 +228,9 @@
                     end
                 end
 
-                for i=1:n
+                for i in 1:n
                     node1 = getnode(l1, i)
-                    node2 = getnode(l2, n-i+1)
+                    node2 = getnode(l2, n - i + 1)
                     addtarget!(node1, node2)
                 end
                 targetsdata1 = Int[]
@@ -241,8 +241,8 @@
                 end
                 @test targetsdata1 == targetsdata2 == [n:-1:1...]
 
-                for shift = 1:floor(n/2)
-                    for i=1:n
+                for shift in 1:floor(n / 2)
+                    for i in 1:n
                         node1 = getnode(l1, i)
                         node2 = getnode(l2, Int(mod(i + shift - 1, n) + 1))
                         addtarget!(node1, node2)
@@ -260,8 +260,8 @@
             end
 
             @testset "remove node targets" begin
-                mid = Int(floor(n/2))
-                for i=1:mid
+                mid = Int(floor(n / 2))
+                for i in 1:mid
                     node = getnode(l1, i)
                     target = node.target
                     removetarget!(node)
@@ -269,7 +269,7 @@
                     @test target.target === target
                     removetarget!(getnode(dl, i))
                 end
-                for i=mid:n
+                for i in mid:n
                     node = getnode(l1, i)
                     target = node.target
                     removetarget!(l1, i)
@@ -282,9 +282,9 @@
             @testset "add list targets" begin
                 @test_throws MethodError addtarget!(l1, dl)
                 for (n3, n4) in zip(ListNodeIterator(l3), ListNodeIterator(l4))
-                    addtarget!(n3,n4)
+                    addtarget!(n3, n4)
                 end
-                addtarget!(l1,l3)
+                addtarget!(l1, l3)
                 @test l1.target === l3 && l3.target === l1
                 @test !hastarget(l2) && !hastarget(l4)
                 for (n2, n4) in zip(ListNodeIterator(l2), ListNodeIterator(l4))
@@ -294,7 +294,7 @@
 
             @testset "remove list targets" begin
                 for (n1, n3) in zip(ListNodeIterator(l1), ListNodeIterator(l3))
-                    addtarget!(n1,n3)
+                    addtarget!(n1, n3)
                 end
                 removetarget!(l1)
                 @test !hastarget(l1) && !hastarget(l3)
@@ -310,11 +310,11 @@
         r = Int[]
         m = 100
 
-        for k = 1 : m
+        for k in 1:m
             la = rand(2:20)
             x = rand(1:1000, la)
 
-            for i = 1 : la
+            for i in 1:la
                 push!(r, x[i])
                 sort!(r)
                 push!(l, x[i])
@@ -323,9 +323,9 @@
             @test length(l) == length(r)
             @test collect(l) == r
 
-            lr = rand(0:length(r)-1)
-            for i = 1 : lr
-                if 3*rand() < 1
+            lr = rand(0:(length(r) - 1))
+            for i in 1:lr
+                if 3 * rand() < 1
                     pop!(r)
                     pop!(l)
                 elseif rand(Bool)
