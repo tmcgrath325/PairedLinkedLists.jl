@@ -11,13 +11,19 @@ end
 """
     node = head(list)
 
-Returns the first "real" node in the list. Note that this is *not* the same as `list.head`, which is a "dummy" node.
+Return the first real node in `list`. This is `list.head.next`, not `list.head`
+itself, which is a dummy sentinel.
+
+Throws `ArgumentError` if the list is empty.
 """
 head(l::AbstractList) = l.len < 1 ? throw(ArgumentError("List must be non-empty")) : l.head.next
 """
-    node = head(list)
+    node = tail(list)
 
-Returns the last "real" node in the list. Note that this is *not* the same as `list.tail`, which is a "dummy" node.
+Return the last real node in `list`. This is `list.tail.prev`, not `list.tail`
+itself, which is a dummy sentinel.
+
+Throws `ArgumentError` if the list is empty.
 """
 tail(l::AbstractList) = l.len < 1 ? throw(ArgumentError("List must be non-empty")) : l.tail.prev
 
@@ -45,24 +51,26 @@ listtype(n::AbstractNode) = listtype(typeof(n))
 """
     node = newnode(list, data)
 
-Create an list node containing `data` of the appropriate type for the provided `list`.
-(e.g. a `ListNode` is created for a `DoublyLinkedList`). 
+Create a list node containing `data` of the type appropriate for `list`
+(e.g. a [`ListNode`](@ref) for a [`DoublyLinkedList`](@ref), a
+[`PairedListNode`](@ref) for a [`PairedLinkedList`](@ref), etc.).
 
-The `node` is disconnected from the `list` (see [`insertafter!`](@ref)).
+The returned node is disconnected from `list`; use [`insertafter!`](@ref) or
+[`insertbefore!`](@ref) to place it.
 """
 newnode(l::AbstractList, data) = nodetype(l)(l, data)
 
 """
     athead(node) -> Bool
 
-Return true if the node is the "dummy" node at the beginning of the list, and false otherwise.
+Return `true` if the node is the "dummy" sentinel at the beginning of the list, and `false` otherwise.
 """
 athead(node::AbstractNode) = node === node.prev
 
 """
     attail(node) -> Bool
 
-Return true if the node is the "dummy" node at the end of the list, and false otherwise.
+Return `true` if the node is the "dummy" sentinel at the end of the list, and `false` otherwise.
 """
 attail(node::AbstractNode) = node === node.next
 
@@ -76,14 +84,18 @@ isdisconnected(node::AbstractNode) = (node.prev === node && node.next === node) 
 # Iterating with a node returns the nodes themselves, and terminates at a list's tail
 Base.iterate(node::AbstractNode) = iterate(node, node)
 Base.iterate(::AbstractNode, node::AbstractNode) = attail(node) ? nothing : (node, node.next)
-Base.IteratorSize(::AbstractNode) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:AbstractNode}) = Base.SizeUnknown()
 """
     ListNodeIterator(start; rev=false)
+    ListNodeIterator(start, stop; rev=false)
 
-Returns an iterator over the nodes of a linked list, starting at the specified node `start`.
+Return an iterator over the nodes of a linked list, beginning at node `start`.
 
-If `rev` is `true`, the iterator will advance toward the head of the list.
-Otherwise, it will advance toward the tail of the list.
+If `stop` is provided, iteration halts when that node is reached (the stop node
+itself is not yielded). `start` and `stop` must belong to the same list.
+
+If `rev` is `true`, the iterator advances toward the head of the list;
+otherwise it advances toward the tail.
 """
 struct ListNodeIterator{S<:AbstractNode}
     start::S
@@ -99,10 +111,36 @@ end
 """
     ListNodeIterator(list; rev=false)
 
-Returns an iterator over the nodes of a linked list.
+Return an iterator over the nodes of a linked list.
 
-If `rev` is `true`, the iterator will start at the tail of the list and advance toward the head.
-Otherwise, it will start at the head of the list and advance toward the tail.
+If `rev` is `true`, the iterator starts at the tail and advances toward the head;
+otherwise it starts at the head and advances toward the tail.
+
+# Examples
+```jldoctest
+julia> l = DoublyLinkedList{Int}(1, 2, 3, 4, 5);
+
+julia> [node.data for node in ListNodeIterator(l)]
+5-element Vector{Int64}:
+ 1
+ 2
+ 3
+ 4
+ 5
+
+julia> [node.data for node in ListNodeIterator(l; rev=true)]
+5-element Vector{Int64}:
+ 5
+ 4
+ 3
+ 2
+ 1
+
+julia> [node.data for node in ListNodeIterator(getnode(l, 2), getnode(l, 4))]
+2-element Vector{Int64}:
+ 2
+ 3
+```
 """
 function ListNodeIterator(l::AbstractList; rev::Bool = false)
     start = rev ? l.tail.prev : l.head.next
@@ -112,18 +150,23 @@ function ListNodeIterator(l::AbstractList; rev::Bool = false)
 end
 Base.iterate(iter::ListNodeIterator) = iterate(iter, iter.start)
 Base.iterate(iter::ListNodeIterator{S}, node::S) where S = (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node, iter.rev ? node.prev : node.next)
-Base.IteratorSize(::ListNodeIterator) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:ListNodeIterator}) = Base.SizeUnknown()
+Base.eltype(::Type{ListNodeIterator{S}}) where S = S
 
 # iterating over a list returns the data contained in each node
 Base.iterate(l::AbstractList) = iterate(l, l.head.next)
 Base.iterate(::AbstractList, node::AbstractNode) = attail(node) ? nothing : (node.data, node.next)
 """
     ListDataIterator(start; rev=false)
+    ListDataIterator(start, stop; rev=false)
 
-Returns an iterator over the data contained in a linked list, starting at the specified node `start`.
+Return an iterator over the data values of a linked list, beginning at node `start`.
 
-If `rev` is `true`, the iterator will advance toward the head of the list.
-Otherwise, it will advance toward the tail of the list.
+If `stop` is provided, iteration halts when that node is reached (the stop node
+itself is not yielded). `start` and `stop` must belong to the same list.
+
+If `rev` is `true`, the iterator advances toward the head of the list;
+otherwise it advances toward the tail.
 """
 struct ListDataIterator{S<:AbstractNode}
     start::S
@@ -139,10 +182,10 @@ end
 """
     ListDataIterator(list; rev=false)
 
-Returns an iterator over the data contained in a linked list.
+Return an iterator over the data values of a linked list.
 
-If `rev` is `true`, the iterator will start at the tail of the list and advance toward the head.
-Otherwise, it will start at the head of the list and advance toward the tail.
+If `rev` is `true`, the iterator starts at the tail and advances toward the head;
+otherwise it starts at the head and advances toward the tail.
 """
 function ListDataIterator(l::AbstractList{T}; rev::Bool = false) where T
     start = rev ? l.tail.prev : l.head.next
@@ -152,15 +195,34 @@ function ListDataIterator(l::AbstractList{T}; rev::Bool = false) where T
 end
 Base.iterate(iter::ListDataIterator) = iterate(iter, iter.start)
 Base.iterate(iter::ListDataIterator{S}, node::S) where S =  (node === iter.stop || (iter.rev ? athead(node) : attail(node))) ? nothing : (node.data, iter.rev ? node.prev : node.next)
-Base.IteratorSize(::ListDataIterator) = Base.SizeUnknown()
+Base.IteratorSize(::Type{<:ListDataIterator}) = Base.SizeUnknown()
+Base.eltype(::Type{<:ListDataIterator{S}}) where {T,S<:AbstractNode{T}} = T
 
 Base.isempty(l::AbstractList) = l.len == 0
 Base.length(l::AbstractList) = l.len
 Base.eltype(::Type{<:AbstractList{T}}) where T = T
+Base.firstindex(l::AbstractList) = 1
 Base.lastindex(l::AbstractList) = l.len
 Base.keys(l::AbstractList) = LinearIndices(1:l.len)
 
-Base.:(==)(n1::AbstractNode, n2::AbstractNode) = (hastarget(n1) || hastarget(n2) ? hastarget(n1) && hastarget(n2) && n1.target.data == n2.target.data : true) && n1.data == n2.data 
+Base.:(==)(n1::AbstractNode, n2::AbstractNode) = (hastarget(n1) || hastarget(n2) ? hastarget(n1) && hastarget(n2) && n1.target.data == n2.target.data : true) && n1.data == n2.data
+
+# `isequal`/`hash` are the strict pair Dict/Set rely on; the node `==` above is
+# loose. Compare leaf data with `isequal` so the cases that distinguish it from
+# `==` (signed zero, `NaN`) stay consistent with the hash below.
+function Base.isequal(n1::AbstractNode, n2::AbstractNode)
+    hastarget(n1) == hastarget(n2) || return false
+    hastarget(n1) && !isequal(n1.target.data, n2.target.data) && return false
+    return isequal(n1.data, n2.data)
+end
+
+function Base.hash(node::AbstractNode, h::UInt)
+    h = hash(node.data, h)
+    h = hash(hastarget(node), h)
+    hastarget(node) && (h = hash(node.target.data, h))
+    return h
+end
+
 Base.:(==)(l1::AbstractList{T}, l2::AbstractList{S}) where {T,S} = false
 
 function Base.:(==)(l1::AbstractList{T}, l2::AbstractList{T}) where T
@@ -171,9 +233,44 @@ function Base.:(==)(l1::AbstractList{T}, l2::AbstractList{T}) where T
     return true
 end
 
-function Base.map(f::Base.Callable, l::DoublyLinkedList{T}) where T
+# `isequal`/`hash` are the strict pair Dict/Set relies on; `==` above is loose.
+# Concrete list type is excluded: `==` spans concrete types, so hash must too.
+Base.isequal(l1::AbstractList{T}, l2::AbstractList{S}) where {T,S} = false
+
+function Base.isequal(l1::AbstractList{T}, l2::AbstractList{T}) where T
+    length(l1) == length(l2) || return false
+    for (n1, n2) in zip(ListNodeIterator(l1), ListNodeIterator(l2))
+        hastarget(n1) == hastarget(n2) || return false
+        hastarget(n1) && !isequal(n1.target.data, n2.target.data) && return false
+        isequal(n1.data, n2.data) || return false
+    end
+    return true
+end
+
+function Base.hash(l::AbstractList, h::UInt)
+    h = hash(eltype(l), h)
+    for node in ListNodeIterator(l)
+        h = hash(node.data, h)
+        h = hash(hastarget(node), h)
+        hastarget(node) && (h = hash(node.target.data, h))
+    end
+    return h
+end
+
+"""
+    map(f, l::DoublyLinkedList)
+
+Apply `f` to each element of `l`, returning a new `DoublyLinkedList`.
+
+`map` is defined only for `DoublyLinkedList`. It is intentionally not provided for
+the other list types: an arbitrary `f` need not preserve a `SkipList`'s `sortedby`
+ordering, and mapping a [`PairedLinkedList`](@ref) or [`TargetedLinkedList`](@ref)
+would leave the new list's nodes without the cross-list `target` links that define
+those types. Build such a list explicitly instead.
+"""
+function Base.map(f, l::DoublyLinkedList{T}) where T
     if isempty(l) && f isa Function
-        S = Core.Compiler.return_type(f, Tuple{T})
+        S = Base.promote_op(f, T)
         return DoublyLinkedList{S}()
     elseif isempty(l) && f isa Type
         return DoublyLinkedList{f}()
@@ -246,7 +343,7 @@ function Base.copy!(l2::L, l::L) where L <: Union{DoublyLinkedList, TargetedLink
     return l2
 end
 function Base.copy(l::L) where L <: Union{DoublyLinkedList, SkipList, TargetedLinkedList}
-    l2 = L()
+    l2 = empty(l)
     hastarget(l) && addtarget!(l2, l.target)
     for n in ListNodeIterator(l)
         push!(l2, n.data)
@@ -300,8 +397,8 @@ function Base.copy!(l2::L, l::L) where L <: PairedLinkedList
     return l2
 end
 function Base.copy(l::L) where L <: Union{PairedLinkedList, PairedSkipList}
-    l2 = L()
-    target2 = L()
+    l2 = empty(l)
+    target2 = empty(l.target)
     addtarget!(l2, target2)
     targetmap = Tuple{Int,nodetype(L)}[]
 
@@ -331,7 +428,10 @@ function Base.empty!(l::AbstractLinkedList)
     l.len = 0
     return l
 end
-Base.empty(::L) where L <: AbstractList = L()
+Base.empty(l::AbstractList) = (typeof(l))()
+# Skip lists carry an ordering key and skip factor that the inner constructor cannot
+# default for a non-`identity` `sortedby`; thread them through so the empty copy sorts identically.
+Base.empty(l::AbstractSkipLinkedList) = (typeof(l))(l.skipfactor, l.sortedby)
 
 """
     node = getnode(l::AbstractList, index)
@@ -339,6 +439,7 @@ Base.empty(::L) where L <: AbstractList = L()
 Return the node at the specified index of the list.
 """
 function getnode(l::AbstractList, idx::Int)
+    @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = l.head
     for i in 1:idx
         node = node.next
@@ -354,8 +455,9 @@ function Base.getindex(l::AbstractList, idx::Int)
 end
 
 function Base.getindex(l::L, r::UnitRange) where L <: AbstractList
-    @boundscheck 0 < first(r) < last(r) <= l.len || throw(BoundsError(l, r))
-    l2 = L()
+    isempty(r) && return empty(l)
+    @boundscheck 0 < first(r) && last(r) <= l.len || throw(BoundsError(l, r))
+    l2 = empty(l)
     @inbounds node = getnode(l, first(r))
     node2 = l2.head
     len = length(r)
@@ -370,6 +472,7 @@ function Base.getindex(l::L, r::UnitRange) where L <: AbstractList
 end
 
 function Base.setindex!(l::AbstractLinkedList{T}, data, idx::Int) where T
+    @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = getnode(l, idx)
     node.data = convert(T, data)
     return l
@@ -379,11 +482,20 @@ function Base.append!(l1::L, l2::L) where L <: AbstractLinkedList
     if hastarget(l2)
         l1.target === l2.target || throw(ArgumentError("The lists must have the same target to be combined."))
     end
+    isempty(l2) && return l1
     for node in ListNodeIterator(l2)
         node.list = l1
     end
-    tail(l1).next = head(l2)
-    tail(l2).next = l1.tail
+    # Splice l2's real nodes between l1's last real node and l1's tail sentinel,
+    # linking both directions. Reading through the sentinels (rather than head/tail,
+    # which throw on an empty list) makes an empty l1 fall out as a plain prepend.
+    firstl2 = l2.head.next
+    lastl2 = l2.tail.prev
+    lastl1 = l1.tail.prev
+    lastl1.next = firstl2
+    firstl2.prev = lastl1
+    lastl2.next = l1.tail
+    l1.tail.prev = lastl2
     l1.len += length(l2)
     return l1
 end
@@ -396,9 +508,12 @@ function Base.append!(l::AbstractLinkedList, elts...)
 end
 
 """
-    deletenode!(node::ListNode)
+    deletenode!(node)
 
 Remove `node` from the list to which it belongs, update the list's length, and return the node.
+
+For a [`PairedListNode`](@ref) or [`PairedSkipNode`](@ref), the node's
+cross-list target link is also cleared before removal.
 """
 function deletenode!(node::Union{ListNode, AbstractTargetedListNode})
     prev = node.prev
@@ -419,7 +534,7 @@ function deletenode!(node::AbstractPairedListNode)
 end
 
 """
-    insertafter!(node, prev)`
+    insertafter!(node, prev)
 
 Insert `node` into a list after the preceding node `prev`, update the list's length, and return the node.
 
@@ -440,7 +555,7 @@ function insertafter!(node::N, prev::N) where N <: AbstractNode
 end
 
 """
-    insertbefore!(node, next)`
+    insertbefore!(node, next)
 
 Insert `node` into a list before the subsequent node `next`, update the list's length, and return the node.
 
@@ -468,7 +583,8 @@ function Base.delete!(l::AbstractList, idx::Int)
 end
 
 function Base.delete!(l::AbstractList, r::UnitRange)
-    @boundscheck 0 < first(r) < last(r) <= l.len || throw(BoundsError(l, r))
+    isempty(r) && return l
+    @boundscheck 0 < first(r) && last(r) <= l.len || throw(BoundsError(l, r))
     @inbounds node = getnode(l, first(r))
     prev = node.prev
     len = length(r)
@@ -511,6 +627,17 @@ if isdefined(Base, :popat!)  # We will overload if it is defined, else we define
     import Base: popat!
 end
 
+"""
+    popat!(l::AbstractList, idx::Int) -> data
+    popat!(l::AbstractList, idx::Int, default) -> data_or_default
+
+Remove and return the element at index `idx` of `l`. Throws `BoundsError` if
+`idx` is out of range.
+
+The two-argument form is the same as `Base.popat!`. The three-argument form
+returns `default` instead of throwing when `idx` is out of range; no element
+is removed in that case.
+"""
 function popat!(l::AbstractList, idx::Int)
     @boundscheck 0 < idx <= l.len || throw(BoundsError(l, idx))
     node = deletenode!(getnode(l, idx))
@@ -527,7 +654,9 @@ end
 function Base.insert!(l::AbstractLinkedList, idx::Int, data)
     @boundscheck 0 < idx <= l.len+1 || throw(BoundsError(l, idx))
     node = newnode(l, data)
-    next = getnode(l, idx)
+    # idx == l.len+1 inserts at the end: the successor is the tail sentinel,
+    # which getnode does not address.
+    next = idx == l.len+1 ? l.tail : getnode(l, idx)
     insertbefore!(node, next)
     return l
 end
@@ -568,8 +697,8 @@ function Base.splice!(l::L, r::AbstractUnitRange{<:Integer}, ins=_default_splice
     prev = len > 0 ? node.prev : node
     for i in 1:len
         push!(data, node.data)
-        node = node.next
         hastarget(node) && removetarget!(node)
+        node = node.next
     end
     next = len > 0 ? node : node.next
     if length(ins) == 0
@@ -592,121 +721,197 @@ end
 
 
 """
+    TargetKind
+
+Trait describing how a node or list participates in cross-list `target` links —
+the defining feature of this package. The kinds are [`Reciprocal`](@ref)
+(two-way links), [`OneWay`](@ref) (one-way links), and [`Untargeted`](@ref) (no
+links). `TargetKind(x)` reports the kind for a node or list `x`, and
+[`hastarget`](@ref), [`addtarget!`](@ref), and [`removetarget!`](@ref) dispatch
+on it.
+
+A type opts into targeting by defining `TargetKind(::Type{MyType})` to return
+`Reciprocal()` or `OneWay()` and providing a `target` field initialized to the
+object itself; pointing `target` at the object encodes the unlinked state.
+
+See also [`target`](@ref), [`hastarget`](@ref), [`addtarget!`](@ref),
+[`removetarget!`](@ref).
+"""
+abstract type TargetKind end
+
+"""
+    Reciprocal <: TargetKind
+
+Two-way target links: [`addtarget!`](@ref) and [`removetarget!`](@ref) update
+both an object and its target, maintaining `x === x.target.target`.
+"""
+struct Reciprocal <: TargetKind end
+
+"""
+    OneWay <: TargetKind
+
+One-way target links: [`addtarget!`](@ref) and [`removetarget!`](@ref) update
+only the originating object, leaving its target unchanged.
+"""
+struct OneWay <: TargetKind end
+
+"""
+    Untargeted <: TargetKind
+
+No target links: [`hastarget`](@ref) is always `false` and the targeting
+mutators leave the object unchanged.
+"""
+struct Untargeted <: TargetKind end
+
+TargetKind(x) = TargetKind(typeof(x))
+TargetKind(::Type) = Untargeted()
+TargetKind(::Type{<:Union{AbstractPairedListNode, AbstractPairedSkipNode, AbstractPairedLinkedList, AbstractPairedSkipList}}) = Reciprocal()
+TargetKind(::Type{<:Union{AbstractTargetedListNode, AbstractTargetedLinkedList}}) = OneWay()
+
+"""
     hastarget(node) -> Bool
     hastarget(list) -> Bool
 
-Return `true` if the provided node or list has a target, and false otherwise.
+Return `true` if the provided node or list currently links to a target, and
+`false` otherwise.
 
-See also [`addtarget!`](@ref), [`removetarget!`](@ref)
+See also [`TargetKind`](@ref), [`addtarget!`](@ref), [`removetarget!`](@ref).
 """
-hastarget(obj::Union{AbstractPairedListNode, AbstractTargetedListNode, AbstractPairedLinkedList, AbstractTargetedLinkedList, AbstractPairedSkipNode, AbstractPairedSkipList}) = (obj.target !== obj)
-hastarget(::Union{ListNode, DoublyLinkedList, SkipNode, SkipList}) = false
+hastarget(x) = _hastarget(TargetKind(x), x)
+_hastarget(::Untargeted, x) = false
+_hastarget(::TargetKind, x) = x.target !== x
+
+"""
+    target(node) -> node_or_nothing
+    target(list) -> list_or_nothing
+
+Return the target of `node` or `list`, or `nothing` if no target is currently
+linked. For [`Reciprocal`](@ref) objects (`PairedListNode`, `PairedSkipNode`,
+`PairedLinkedList`, `PairedSkipList`) the link is bidirectional; for
+[`OneWay`](@ref) objects (`TargetedListNode`, `TargetedLinkedList`) it is
+one-directional. [`Untargeted`](@ref) objects always return `nothing`.
+
+This is the public accessor for the cross-list link; callers should use it
+rather than reading the `.target` field directly, as the unlinked state is
+encoded by a self-reference which `target` hides.
+
+See also [`TargetKind`](@ref), [`hastarget`](@ref), [`addtarget!`](@ref),
+[`removetarget!`](@ref).
+"""
+target(x) = _target(TargetKind(x), x)
+_target(::Untargeted, x) = nothing
+_target(::TargetKind, x) = hastarget(x) ? x.target : nothing
+
+# Establish (`_link!`) or clear (`_unlink!`) an object's own `target` field
+# according to its `TargetKind`. A `Reciprocal` object also updates the other
+# end; the unlinked state is encoded by pointing `target` at the object itself.
+_link!(::Reciprocal, obj, target) = (obj.target = target; target.target = obj; obj)
+_link!(::OneWay, obj, target) = (obj.target = target; obj)
+
+_unlink!(::Untargeted, obj) = obj
+_unlink!(::OneWay, obj) = (hastarget(obj) && (obj.target = obj); obj)
+function _unlink!(::Reciprocal, obj)
+    if hastarget(obj)
+        target = obj.target
+        obj.target = obj
+        target.target = target
+    end
+    return obj
+end
 
 """
     addtarget!(node, target_node)
     addtarget!(list, target_list)
 
-Add a link between a the provided node or list and another object of the same type to be assigned its `target`. 
+Link the provided node or list to `target`, assigning it as the object's
+`target`, and return the object.
 
-If the first object is a `PairedListNode' or a 'PairedLinkedList' and either object previously had a target, the prior link is removed.
+For a [`Reciprocal`](@ref) object (such as a `PairedListNode` or
+`PairedLinkedList`) the reverse link is established as well, and any prior target
+of either object is removed first. For a [`OneWay`](@ref) object (such as a
+`TargetedListNode` or `TargetedLinkedList`) only the object's own link is set and
+`target` is left unchanged.
 
-If the first object is a `TargetedListNode` or a `TargetedLinkedList`, the second object remains unchanged.
+# Examples
+```jldoctest
+julia> l1 = PairedLinkedList{Int}(1, 2, 3);
 
-See also [`hastarget`](@ref), [`removetarget!`](@ref)
+julia> l2 = PairedLinkedList{Int}(10, 20, 30);
+
+julia> addtarget!(l1, l2);
+
+julia> hastarget(l1)
+true
+
+julia> l1.target === l2
+true
+
+julia> addtarget!(getnode(l1, 1), getnode(l2, 2));
+
+julia> getnode(l1, 1).target.data
+20
+
+julia> getnode(l2, 2).target.data
+1
+```
+
+See also [`TargetKind`](@ref), [`hastarget`](@ref), [`removetarget!`](@ref).
 """
 function addtarget!(list::L, target::L) where L <: Union{AbstractPairedLinkedList, AbstractPairedSkipList}
-    if hastarget(list)     # remove existing targets
-        removetarget!(list)
-    end
-    if hastarget(target)
-        removetarget!(target)
-    end
-    list.target = target
-    target.target = list
-    return list
+    hastarget(list) && removetarget!(list)
+    hastarget(target) && removetarget!(target)
+    return _link!(TargetKind(list), list, target)
 end
 
 function addtarget!(node::N, target::N) where N <: Union{AbstractPairedListNode, AbstractPairedSkipNode}
     node.list.target === target.list || throw(ArgumentError("The provided node must belong to paired list."))
-    if hastarget(node)     # remove existing targets
-        removetarget!(node)
-    end
-    if hastarget(target)
-        removetarget!(target)
-    end
-    node.target = target
-    target.target = node
-    return node
+    hastarget(node) && removetarget!(node)
+    hastarget(target) && removetarget!(target)
+    return _link!(TargetKind(node), node, target)
 end
 
 function addtarget!(list::AbstractTargetedLinkedList{T,R}, target::R) where {T,R}
-    if hastarget(list)    # remove an existing target
-        removetarget!(list)
-    end
-    list.target = target
-    return list
+    hastarget(list) && removetarget!(list)
+    return _link!(TargetKind(list), list, target)
 end
 
 function addtarget!(node::AbstractTargetedListNode{T,N,L}, target::N) where {T,N,L}
     if hastarget(node.list)
         node.list.target === target.list || throw(ArgumentError("The provided node must belong to the list being targeted."))
     end
-    if hastarget(node)    # remove an existing target
+    hastarget(node) && removetarget!(node)
+    return _link!(TargetKind(node), node, target)
+end
+
+"""
+    removetarget!(node) -> node
+    removetarget!(list) -> list
+    removetarget!(list, idx::Int) -> node
+
+Remove the target link of the node or list (or of the `idx`-th node of `list`)
+and return the object whose link was removed. An object without a target is
+returned unchanged.
+
+For a [`Reciprocal`](@ref) object the reverse link is removed as well. Removing
+a list's target also removes the target link of each of its nodes.
+
+!!! note
+    `removetarget!(list)` removes *both* the list-level link *and* all
+    node-level target links within that list.
+
+See also [`TargetKind`](@ref), [`hastarget`](@ref), [`addtarget!`](@ref).
+"""
+removetarget!(node::AbstractNode) = _unlink!(TargetKind(node), node)
+
+function removetarget!(list::AbstractList)
+    hastarget(list) || return list
+    _unlink!(TargetKind(list), list)
+    for node in ListNodeIterator(list)
         removetarget!(node)
     end
-    node.target = target
-    return node
-end
-
-"""
-    removetarget!(node)
-
-Remove the link between the node or list and its target (if the object is already paired) and return `node`.
-
-If the object is a `PairedListNode` or `PairedLinkedList`, the link will be deleted from both the object and its target.
-
-If the object is a `TargetedListNode` or `PairedLinkedList`, the link will be deleted from only the object.
-
-See also [`hastarget`](@ref), [`addtarget!`](@ref)
-"""
-function removetarget!(node::Union{AbstractPairedListNode, AbstractPairedSkipNode})
-    if hastarget(node)
-        target = node.target
-        node.target = node
-        target.target = target
-    end
-    return node
-end
-function removetarget!(node::AbstractTargetedListNode)
-    if hastarget(node)
-        node.target = node
-    end
-    return node
-end
-removetarget!(node::Union{ListNode,SkipNode}) = node;
-
-function removetarget!(list::Union{AbstractPairedLinkedList, AbstractPairedSkipList})
-    if hastarget(list)
-        target = list.target
-        list.target = list
-        target.target = target
-        for node in ListNodeIterator(list)
-            removetarget!(node)
-        end
-    end
-    return list
-end
-function removetarget!(list::AbstractTargetedLinkedList)
-    if hastarget(list)
-        list.target = list
-        for node in ListNodeIterator(list)
-            removetarget!(node)
-        end
-    end
     return list
 end
 
-function removetarget!(l::Union{AbstractPairedLinkedList,AbstractTargetedLinkedList,AbstractPairedSkipList}, idx::Int)
-    node = getnode(l, idx)
-    return removetarget!(node)
+function removetarget!(list::AbstractList, idx::Int)
+    return removetarget!(getnode(list, idx))
 end

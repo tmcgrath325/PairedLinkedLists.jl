@@ -52,9 +52,7 @@ end
 
 # this function similar to insertafter!, but does not modify the length of the list, making it appropriate for skip nodes not on the bottom row.
 function insertskipafter!(node::N, prev::N) where N <: AbstractSkipNode
-    if node.list !== prev.list 
-        @show length(node.list)
-        @show length(prev.list)
+    if node.list !== prev.list
         throw(ArgumentError("The nodes must have the same parent list."))
     end
     next = prev.next
@@ -67,7 +65,7 @@ end
 
 function search(l::AbstractSkipLinkedList{T}, data::T) where T
     sdata = l.sortedby(data)
-    rn = getfirst(x -> l.sortedby(x.data) > sdata, l.top)
+    rn = getfirst(x -> l.sortedby(x.data) > sdata, l.nlevels > 1 ? l.top : l.head.next)
     rn = isnothing(rn) ? l.toptail : rn
     ln = rn.prev
     for i = l.nlevels-1:-1:1
@@ -91,11 +89,9 @@ function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNod
     data = bottomnode.data
     sdata = l.sortedby(data)
     if level > l.nlevels
-        @show level, l.nlevels
         for i=l.nlevels+1:level
             addlevel!(l)
         end
-        @show l.nlevels
     end
     rn = getfirst(x -> l.sortedby(x.data) > sdata, l.nlevels > 1 ? l.top : l.head.next)
     rn = isnothing(rn) ? l.toptail : rn
@@ -107,12 +103,7 @@ function searchinsert!(l::AbstractSkipLinkedList{T}, bottomnode::AbstractSkipNod
         abovenode = level === 1 ? insertafter!(bottomnode, ln) : insertskipafter!(newnode(l,data), ln)
     end
     for lvl = l.nlevels-1:-1:1
-        try
-            @assert !atbottom(ln)
-        catch e
-            @show level, lvl, l.nlevels, height(l.top), sdata, l.top.data, head(l).data
-            throw(e)
-        end
+        @assert !atbottom(ln)
         ln = ln.down
         rn = rn.down
         for n in ln
@@ -157,27 +148,31 @@ function addlevel!(l::AbstractSkipLinkedList)
     return l
 end
 
-function removelevel!(l::AbstractSkipLinkedList)
-    l.nlevels <= 1 && throw(ErrorException("Cannot remove the only level of a skip list"))
-    for n in ListNodeIterator(l.top.next)
-        n.down.top = n.down
-    end
-    l.top = l.top.down
-    l.top.up = l.top
-    l.toptail = l.toptail.down
-    l.toptail.up = l.toptail
-    l.nlevels -= 1
-end
-
-function trimlevels!(l::AbstractSkipLinkedList)
-    while l.nlevels > 1 && l.top.next === l.toptail
-        l.top = l.top.down
-        l.top.up = l.top
-        l.toptail = l.toptail.down
-        l.toptail.up = l.toptail
-        l.nlevels -= 1
-    end
-end
+# removelevel! and trimlevels! are not currently called by any other function.
+# They may be useful in the future for maintaining a reasonable list height
+# when many nodes have been deleted.
+#
+# function removelevel!(l::AbstractSkipLinkedList)
+#     l.nlevels <= 1 && throw(ErrorException("Cannot remove the only level of a skip list"))
+#     for n in ListNodeIterator(l.top.next)
+#         n.down.top = n.down
+#     end
+#     l.top = l.top.down
+#     l.top.up = l.top
+#     l.toptail = l.toptail.down
+#     l.toptail.up = l.toptail
+#     l.nlevels -= 1
+# end
+#
+# function trimlevels!(l::AbstractSkipLinkedList)
+#     while l.nlevels > 1 && l.top.next === l.toptail
+#         l.top = l.top.down
+#         l.top.up = l.top
+#         l.toptail = l.toptail.down
+#         l.toptail.up = l.toptail
+#         l.nlevels -= 1
+#     end
+# end
 
 # generate a random level at which to insert a new node
 function randomlevel(max::Int, skipfactor::Int)
@@ -358,7 +353,7 @@ function copyfromcache(L::Type{<:AbstractSkipLinkedList{T,F}}, cache::SkipListCa
 end
 
 """
-    skiplistsidentical(l1::SkipList, l2::SkipList)
+    skiplistsidentical(l1::AbstractSkipLinkedList, l2::AbstractSkipLinkedList)
 
 Returns true if the two skip lists are identical, false otherwise. 
     
@@ -367,7 +362,7 @@ Because nodes are typically added at a random level, two skip lists constructed 
 
 See also [`copyfromcache`](@ref)
 """
-function skiplistsidentical(l1, l2)
+function skiplistsidentical(l1::AbstractSkipLinkedList, l2::AbstractSkipLinkedList)
     if (l1.len != l2.len) || (l1.nlevels != l2.nlevels)
         return false
     end

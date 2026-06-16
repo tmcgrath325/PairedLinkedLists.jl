@@ -190,6 +190,15 @@
             @test length(l) == n
             empty!(l)
             @test l == emptyl
+
+            # empty! on a list with a target re-establishes the target link
+            l1 = PairedSkipList{Int}(1:n...)
+            l2 = PairedSkipList{Int}(1:n...)
+            addtarget!(l1, l2)
+            @test hastarget(l1) && hastarget(l2)
+            empty!(l1)
+            @test isempty(l1)
+            @test hastarget(l1) && l1.target === l2
         end
 
         @testset "targets" begin
@@ -332,5 +341,33 @@
             @test length(l) == length(r)
             @test collect(l) == r
         end
+    end
+
+    @testset "eltype inference" begin
+        l = PairedSkipList(3, 1, 2)
+        @test eltype(l) == Int
+        @test collect(l) == [1, 2, 3]
+        l2 = PairedSkipList(3, 1.0, 2)
+        @test eltype(l2) == Float64
+        @test collect(l2) == [1.0, 2.0, 3.0]
+    end
+
+    @testset "copy/empty/getindex with non-identity sortedby" begin
+        l = PairedSkipList{Int}(3, 1, 2, 4; sortedby = -)
+        @test collect(l) == [4, 3, 2, 1]
+
+        l2 = copy(l)
+        @test collect(l2) == [4, 3, 2, 1]
+        @test l2.sortedby === l.sortedby
+
+        e = empty(l)
+        @test length(e) == 0
+        @test typeof(e) == typeof(l)
+        @test e.sortedby === l.sortedby
+        @test e.skipfactor == l.skipfactor
+
+        @test collect(l[2:3]) == [3, 2]
+        @test collect(l[2:1]) == Int[]
+        @test typeof(l[2:3]) == typeof(l)
     end
 end

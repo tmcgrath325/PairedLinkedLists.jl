@@ -1,6 +1,15 @@
-using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsidentical
+using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, atbottom, height, search, insertskipafter!, skiplistsidentical, SkipListCache, copyfromcache, emptycache!
 
 @testset "SkipList" begin
+
+    @testset "concrete pointer field types" begin
+        # The prev/next/up/down links must carry the full SkipNode{T,L} type so
+        # the compiler can infer concrete types across pointer chains.
+        N = SkipNode{Int,SkipList{Int,typeof(identity)}}
+        for f in (:prev, :next, :up, :down)
+            @test isconcretetype(fieldtype(N, f))
+        end
+    end
 
     @testset "empty list" begin
         l1 = SkipList{Int}()
@@ -337,5 +346,151 @@ using PairedLinkedLists: searchinsert!, addlevel!, pushskip!, attop, skiplistsid
 
             @test skiplistsidentical(l, copyfromcache(l))
         end
+    end
+
+    @testset "non-Function callable sortedby" begin
+        # sortedby accepts any callable, not just subtypes of Function
+        struct NegKey end
+        (::NegKey)(x) = -x
+        key = NegKey()
+        @test !(key isa Function)
+        l = SkipList{Int,NegKey}(2, key)
+        push!(l, 3); push!(l, 1); push!(l, 2)
+        @test collect(l) == [3, 2, 1]
+    end
+
+    @testset "eltype inference" begin
+        l = SkipList(3, 1, 2)
+        @test eltype(l) == Int
+        @test collect(l) == [1, 2, 3]
+        l2 = SkipList(3, 1.0, 2)
+        @test eltype(l2) == Float64
+        @test collect(l2) == [1.0, 2.0, 3.0]
+        # keyword args are forwarded
+        l3 = SkipList(3, 1, 2; sortedby=-)
+        @test collect(l3) == [3, 2, 1]
+    end
+
+    @testset "copy/empty/getindex with non-identity sortedby" begin
+        l = SkipList{Int}(3, 1, 2, 4; sortedby = -)
+        @test collect(l) == [4, 3, 2, 1]
+
+        l2 = copy(l)
+        @test collect(l2) == [4, 3, 2, 1]
+        @test l2.sortedby === l.sortedby
+        push!(l2, 5)
+        @test collect(l) == [4, 3, 2, 1]   # copy is independent
+
+        e = empty(l)
+        @test length(e) == 0
+        @test typeof(e) == typeof(l)
+        @test e.sortedby === l.sortedby
+        @test e.skipfactor == l.skipfactor
+
+        @test collect(l[2:3]) == [3, 2]
+        @test collect(l[2:1]) == Int[]
+        @test typeof(l[2:3]) == typeof(l)
+    end
+
+    @testset "search" begin
+        l = SkipList{Int}()
+        # force a 3-level structure so descent through levels is exercised
+        pushskip!(l, newnode(l, 5), 3)
+        pushskip!(l, newnode(l, 2), 2)
+        pushskip!(l, newnode(l, 8), 2)
+        push!(l, 1); push!(l, 3); push!(l, 7)
+        @test collect(l) == [1, 2, 3, 5, 7, 8]
+
+        # value present in list
+        @test search(l, 5).data == 5
+        # between two values
+        @test search(l, 4).data == 3
+        # below all values — returns head sentinel
+        @test search(l, 0) === l.head
+        # above all values — returns last node
+        @test search(l, 9).data == 8
+        # single-level list
+        ls = SkipList{Int}(3, 1, 2)
+        @test search(ls, 2).data == 2
+        @test search(ls, 0) === ls.head
+    end
+
+    @testset "push! with pre-created node" begin
+        l = SkipList{Int}()
+        node = newnode(l, 42)
+        push!(l, node)
+        @test collect(l) == [42]
+        @test length(l) == 1
+        # node from a different list is rejected
+        l2 = SkipList{Int}()
+        alien = newnode(l2, 99)
+        @test_throws "does not belong to the list" push!(l, alien)
+    end
+
+    @testset "insertskipafter! cross-list error" begin
+        l1 = SkipList{Int}()
+        l2 = SkipList{Int}()
+        n1 = newnode(l1, 1)
+        n2 = newnode(l2, 2)
+        @test_throws "must have the same parent list" insertskipafter!(n1, n2)
+    end
+
+    @testset "height on multi-level node" begin
+        l = SkipList{Int}()
+        pushskip!(l, newnode(l, 3), 1)
+        pushskip!(l, newnode(l, 7), 1)
+        # force a 3-level node so the inner height() loop runs at least twice
+        pushskip!(l, newnode(l, 5), 3)
+        @test l.nlevels == 3
+        # find the bottom-level node for 5
+        bottom = l.head.next
+        while bottom.data != 5
+            bottom = bottom.next
+        end
+        while !atbottom(bottom)
+            bottom = bottom.down
+        end
+        # climb to the top
+        top = bottom
+        while !attop(top)
+            top = top.up
+        end
+        @test top !== bottom
+        @test height(top) == 3
+        @test height(bottom) == 3
+    end
+
+    @testset "searchinsert! with level above nlevels" begin
+        l = SkipList{Int}()
+        pushskip!(l, newnode(l, 1), 1)
+        pushskip!(l, newnode(l, 2), 1)
+        @test l.nlevels == 1
+        # pushing at level 3 on a non-empty list forces two addlevel! calls
+        pushskip!(l, newnode(l, 5), 3)
+        @test l.nlevels == 3
+        @test collect(l) == [1, 2, 5]
+    end
+
+    @testset "emptycache! on non-nothing cache" begin
+        l = SkipList{Int}()
+        l.cache = SkipListCache{Int}()
+        push!(l, 1); push!(l, 2); push!(l, 3)
+        @test !isempty(l.cache.data)
+        empty!(l)
+        @test isempty(l.cache.data)
+        @test isempty(l.cache.levels)
+    end
+
+    @testset "skiplistsidentical edge cases" begin
+        l1 = SkipList{Int}(1, 2, 3)
+        l2 = SkipList{Int}(1, 2, 3, 4)
+        # different lengths → false
+        @test !skiplistsidentical(l1, l2)
+        # same length, different data → false
+        l3 = SkipList{Int}()
+        l4 = SkipList{Int}()
+        pushskip!(l3, newnode(l3, 1), 1)
+        pushskip!(l4, newnode(l4, 2), 1)
+        @test !skiplistsidentical(l3, l4)
     end
 end

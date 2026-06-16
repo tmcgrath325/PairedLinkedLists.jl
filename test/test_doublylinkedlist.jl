@@ -1,3 +1,5 @@
+using PairedLinkedLists: listtype, isdisconnected
+
 @testset "DoublyLinkedList" begin
 
     @testset "empty list" begin
@@ -15,6 +17,17 @@
         @test_throws ArgumentError popfirst!(l1)
         @test_throws ArgumentError head(l1)
         @test_throws ArgumentError tail(l1)
+    end
+
+    @testset "node construction" begin
+        l = DoublyLinkedList{Int}()
+        # The ListNode{T} outer constructor fills in the list parameter and must
+        # build a ListNode, not some other node type.
+        @test ListNode{Int}(l) isa ListNode{Int,DoublyLinkedList{Int}}
+        node = ListNode{Int}(l, 5)
+        @test node isa ListNode{Int,DoublyLinkedList{Int}}
+        @test node.data == 5
+        @test node.list === l
     end
 
     @testset "core functionality" begin
@@ -39,6 +52,8 @@
                 for (i,data) in enumerate(ListDataIterator(l.tail.prev.prev; rev=true))
                     @test data == n-i
                 end
+                @test eltype(ListDataIterator(l)) == eltype(l)
+                @test eltype(collect(ListDataIterator(l))) == eltype(l)
             end
 
             @testset "nodes" begin
@@ -57,6 +72,8 @@
                 for (i,node) in enumerate(ListNodeIterator(l.tail.prev.prev; rev=true))
                     @test node == newnode(l,n-i)
                 end
+                @test eltype(ListNodeIterator(l)) == typeof(l.head.next)
+                @test eltype(collect(ListNodeIterator(l))) == typeof(l.head.next)
             end
         end
 
@@ -78,6 +95,9 @@
                         setindex!(l, i - 2, i - 2)
                     end
                     @test lastindex(l) == i
+                    @test firstindex(l) == 1
+                    @test l[begin] == l[1]
+                    @test l[end] == l[i]
                     @test length(l) == i
                     @test isempty(l) == false
                     @test keys(l) == collect(1:i)
@@ -145,10 +165,34 @@
                     append!(l, l2)
                     @test l == DoublyLinkedList{Int}(1:2n...)
                     @test collect(l) == collect(DoublyLinkedList{Int}(1:2n...))
+                    # backward links must be spliced too, not just forward `.next`
+                    @test [node.data for node in ListNodeIterator(l; rev=true)] == collect(2n:-1:1)
+                    @test last(l) == 2n
                     l3 = DoublyLinkedList{Int}(1:n...)
                     append!(l3, n+1:2n...)
                     @test l3 == DoublyLinkedList{Int}(1:2n...)
                     @test collect(l3) == collect(DoublyLinkedList{Int}(1:2n...))
+
+                    # backward consistency exercised through pop! and reverse (mutating, so use fresh lists)
+                    lp = DoublyLinkedList{Int}(1:n...)
+                    append!(lp, DoublyLinkedList{Int}(n+1:2n...))
+                    @test pop!(lp) == 2n
+                    @test lp == DoublyLinkedList{Int}(1:2n-1...)
+                    lr = DoublyLinkedList{Int}(1:n...)
+                    append!(lr, DoublyLinkedList{Int}(n+1:2n...))
+                    @test collect(reverse(lr)) == collect(2n:-1:1)
+
+                    # empty operands behave like Base: no-op / prepend, never throw
+                    le1 = DoublyLinkedList{Int}()
+                    append!(le1, DoublyLinkedList{Int}(1:n...))
+                    @test le1 == DoublyLinkedList{Int}(1:n...)
+                    @test [node.data for node in ListNodeIterator(le1; rev=true)] == collect(n:-1:1)
+                    le2 = DoublyLinkedList{Int}(1:n...)
+                    append!(le2, DoublyLinkedList{Int}())
+                    @test le2 == DoublyLinkedList{Int}(1:n...)
+                    le3 = DoublyLinkedList{Int}()
+                    append!(le3, DoublyLinkedList{Int}())
+                    @test isempty(le3)
                 end
 
                 @testset "delete" begin
@@ -376,5 +420,47 @@
             @test length(l) == length(r)
             @test collect(l) == r
         end
+    end
+
+    @testset "eltype inference" begin
+        # homogeneous
+        l = DoublyLinkedList(1, 2, 3)
+        @test eltype(l) == Int
+        @test collect(l) == [1, 2, 3]
+        # promotable mixed types
+        l2 = DoublyLinkedList(1, 2.0, 3)
+        @test eltype(l2) == Float64
+        @test collect(l2) == [1.0, 2.0, 3.0]
+        # matches Base's promote_type behaviour for array literals
+        @test eltype(DoublyLinkedList(1, 2, 3)) == eltype([1, 2, 3])
+    end
+
+    @testset "listtype" begin
+        l = DoublyLinkedList{Int}(1, 2, 3)
+        node = l.head.next
+        @test listtype(node) === DoublyLinkedList{Int}
+        @test listtype(typeof(node)) === DoublyLinkedList{Int}
+    end
+
+    @testset "isdisconnected" begin
+        l = DoublyLinkedList{Int}(1, 2)
+        node = newnode(l, 99)
+        @test isdisconnected(node)
+        @test !isdisconnected(l.head.next)
+    end
+
+    @testset "cross-type equality" begin
+        li = DoublyLinkedList{Int}(1, 2, 3)
+        lf = DoublyLinkedList{Float64}(1.0, 2.0, 3.0)
+        @test li != lf
+        @test !isequal(li, lf)
+        @test isequal(DoublyLinkedList{Int}(1, 2), DoublyLinkedList{Int}(1, 2))
+        @test DoublyLinkedList{Int}(1, 2) == DoublyLinkedList{Int}(1, 2)
+    end
+
+    @testset "hastarget on untargeted types" begin
+        l = DoublyLinkedList{Int}(1, 2)
+        @test !hastarget(l)
+        @test !hastarget(l.head.next)
     end
 end
