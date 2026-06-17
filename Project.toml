@@ -7,9 +7,9 @@ authors = ["Tom McGrath <tmcgrath325@gmail.com> and contributors"]
 
 [compat]
 Aqua = "0.8"
-ExplicitImports = "1.15"
+ExplicitImports = "1.12 - 1.15"
 Test = "1"
-julia = "1.6"
+julia = "1.10"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
